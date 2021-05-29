@@ -140,9 +140,9 @@ async def update(ctx):
 @client.command()
 async def addmov(ctx):
     channel = discord.utils.get(ctx.guild.channels, name="movie-vote")
-    message = await channel.history(limit=1).flatten()
+    message = ctx.message
     await channel.purge(limit=100)
-    message = message[0].content
+    message = message.content
     parse = re.sub(r'(^.addmov)', '', message).lstrip()
     poll.append(parse)
     indnum = 1
@@ -255,6 +255,78 @@ async def randmov(ctx):
 async def burhelp(ctx):
     user = ctx.author
     await user.create_dm()
+
+
+@client.command()
+async def peak(ctx):
+    channel = ctx.channel
+    message = ctx.message
+    message = message.content
+    user = re.sub(r'(^.peak)', '', message).lstrip()
+
+    try:
+        file = open('texts/peaks.txt', 'r')
+    except:
+        file = open('texts/peaks.txt', 'w')
+
+    l = file.read().split('\n')
+
+    matching = [s for s in l if (user + ':') in s]
+
+    if matching.__len__() == 0:
+        peaks = ''
+        for person in l:
+            if not (person == ' '):
+                peaks = peaks + person + '\n'
+
+        embed = discord.Embed(title=(user + " is not currently in the overpeak system"))
+        embed.add_field(name='Current overpeakers:', value=str(peaks))
+        embed.add_field(name='To add to user:', value=str("Type .addpeak (USER)"))
+        await channel.send(embed=embed)
+
+    else:
+        list2 = []
+        for person in l:
+            list2.append(person.split(" "))
+        for person in list2:
+            if person[0] == (user + ':'):
+                count = int(person[1]) + 1
+
+        search = user + ': ' + str(count - 1)
+        result = user + ': ' + str(count)
+
+        l.pop(l.index(search))
+        l.append(result)
+        l = sorted(l)
+
+        filewrite = ''
+        for person in l:
+            if not (person == ' '):
+                filewrite = filewrite + person + '\n'
+
+        file = open('texts/peaks.txt', 'w')
+        file.write(filewrite.lstrip())
+        embed = discord.Embed(title=(user + " overpeaked again"))
+        embed.add_field(name='What a fucking dumbass', value=("He's overpeaked " + str(count) + ' times'))
+        await channel.send(embed=embed)
+
+@client.command()
+async def addpeak(ctx):
+    channel = ctx.channel
+    message = ctx.message
+    message = message.content
+    user = re.sub(r'(^.addpeak)', '', message).lstrip()
+
+    try:
+        file = open('texts/peaks.txt', 'a')
+    except:
+        file = open('texts/peaks.txt', 'w')
+    file.write(user + ": " + str(0) + '\n')
+
+    embed = discord.Embed(title=(user + " has been added to the list of overpeakers"))
+    await channel.send(embed=embed)
+
+
 
 
 client.run('ODM4MTAzNjY5MzcwNjUwNzE1.YI2O3Q.Tuq8ZqrLshUVxyw0Qc2p6_nu-A4')
