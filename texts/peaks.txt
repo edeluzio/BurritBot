@@ -1,5 +1,5 @@
 A1ex: 0
-Bev: 1
+Bev: 0
 Jarry: 0
 Kev: 0
 Lang: 0

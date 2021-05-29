@@ -258,6 +258,26 @@ async def burhelp(ctx):
 
 
 @client.command()
+async def peaklist(ctx):
+    try:
+        file = open('texts/peaks.txt', 'r')
+    except:
+        file = open('texts/peaks.txt', 'w')
+
+    l = file.read().split('\n')
+
+
+    channel = ctx.channel
+    peaks = ''
+    for person in l:
+        if not (person == ' '):
+            peaks = peaks + person + '\n'
+
+    embed = discord.Embed(title=("Current Overpeakers:"))
+    embed.add_field(name='________________________', value=str(peaks))
+    await channel.send(embed=embed)
+
+@client.command()
 async def peak(ctx):
     channel = ctx.channel
     message = ctx.message
