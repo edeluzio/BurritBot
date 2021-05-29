@@ -301,7 +301,7 @@ async def peak(ctx):
 
         embed = discord.Embed(title=(user + " is not currently in the overpeak system"))
         embed.add_field(name='Current overpeakers:', value=str(peaks))
-        embed.add_field(name='To add to user:', value=str("Type .addpeak (USER)"))
+        embed.add_field(name='To add to overpeaker list:', value=str("Type .addpeak (USER)"))
         await channel.send(embed=embed)
 
     else:
@@ -344,6 +344,96 @@ async def addpeak(ctx):
     file.write(user + ": " + str(0) + '\n')
 
     embed = discord.Embed(title=(user + " has been added to the list of overpeakers"))
+    await channel.send(embed=embed)
+
+
+@client.command()
+async def virginlist(ctx):
+    try:
+        file = open('texts/virgins.txt', 'r')
+    except:
+        file = open('texts/virgins.txt', 'w')
+
+    l = file.read().split('\n')
+
+
+    channel = ctx.channel
+    virgins = ''
+    for person in l:
+        if not (person == ' '):
+            virgins = virgins + person + '\n'
+
+    embed = discord.Embed(title=("Current Virgins:"))
+    embed.add_field(name='________________________', value=str(virgins))
+    await channel.send(embed=embed)
+
+@client.command()
+async def virgin(ctx):
+    channel = ctx.channel
+    message = ctx.message
+    message = message.content
+    user = re.sub(r'(^.virgin)', '', message).lstrip()
+
+    try:
+        file = open('texts/virgins.txt', 'r')
+    except:
+        file = open('texts/virgins.txt', 'w')
+
+    l = file.read().split('\n')
+
+    matching = [s for s in l if (user + ':') in s]
+
+    if matching.__len__() == 0:
+        virgins = ''
+        for person in l:
+            if not (person == ' '):
+                virgins = virgins + person + '\n'
+
+        embed = discord.Embed(title=(user + " is not currently in the virgin system"))
+        embed.add_field(name='Current Virgins:', value=str(virgins))
+        embed.add_field(name='To add to virgin list:', value=str("Type .addvirgin (USER)"))
+        await channel.send(embed=embed)
+
+    else:
+        list2 = []
+        for person in l:
+            list2.append(person.split(" "))
+        for person in list2:
+            if person[0] == (user + ':'):
+                count = int(person[1]) + 1
+
+        search = user + ': ' + str(count - 1)
+        result = user + ': ' + str(count)
+
+        l.pop(l.index(search))
+        l.append(result)
+        l = sorted(l)
+
+        filewrite = ''
+        for person in l:
+            if not (person == ' '):
+                filewrite = filewrite + person + '\n'
+
+        file = open('texts/virgins.txt', 'w')
+        file.write(filewrite.lstrip())
+        embed = discord.Embed(title=(user + " acted like a virgin again"))
+        embed.add_field(name='What a fucking virgin', value=("He's virgined " + str(count) + ' times'))
+        await channel.send(embed=embed)
+
+@client.command()
+async def addvirgin(ctx):
+    channel = ctx.channel
+    message = ctx.message
+    message = message.content
+    user = re.sub(r'(^.addvirgin)', '', message).lstrip()
+
+    try:
+        file = open('texts/virgins.txt', 'a')
+    except:
+        file = open('texts/virgins.txt', 'w')
+    file.write(user + ": " + str(0) + '\n')
+
+    embed = discord.Embed(title=(user + " has been added to the list of overvirginers"))
     await channel.send(embed=embed)
 
 
