@@ -8,8 +8,20 @@ from bs4 import BeautifulSoup
 import json
 import random
 import time
+import sqlite3
+import dbinit
 
 client = commands.Bot(command_prefix='.')
+
+#database stuff
+conn = sqlite3.connect('../db/user.db')
+curs = conn.cursor()
+curs.execute("""CREATE TABLE users (
+                username text,
+                password text,
+                )""")
+
+
 poll = []
 
 
@@ -337,14 +349,21 @@ async def addpeak(ctx):
     message = message.content
     user = re.sub(r'(^.addpeak)', '', message).lstrip()
 
-    try:
-        file = open('texts/peaks.txt', 'a')
-    except:
-        file = open('texts/peaks.txt', 'w')
-    file.write(user + ": " + str(0) + '\n')
+    file = open('texts/peaks.txt', 'r')
 
-    embed = discord.Embed(title=(user + " has been added to the list of overpeakers"))
-    await channel.send(embed=embed)
+    l = file.read().split('\n')
+
+    matching = [s for s in l if (user + ':') in s]
+
+    if not matching.__len__() == 0:
+        embed = discord.Embed(title=(user + " is already in the list of overpeakers"))
+        await channel.send(embed=embed)
+    else:
+        file = open('texts/peaks.txt', 'a')
+        file.write(user + ": " + str(0) + '\n')
+
+        embed = discord.Embed(title=(user + " has been added to the list of overpeakers"))
+        await channel.send(embed=embed)
 
 
 @client.command()
@@ -435,6 +454,30 @@ async def addvirgin(ctx):
 
     embed = discord.Embed(title=(user + " has been added to the list of overvirginers"))
     await channel.send(embed=embed)
+
+@client.command()
+async def valsignup(ctx):
+    author = ctx.author
+    channel = ctx.channnel
+    message = ctx.message
+
+    await author.send("hello")
+
+
+@client.command()
+async def shop(ctx):
+    author = ctx.author
+    channel = ctx.channnel
+    message = ctx.message
+
+
+    user = re.sub(r'(^.shop)', '', message).lstrip()
+
+
+
+    dbinit.addDB()
+
+
 
 
 
