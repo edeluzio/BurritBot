@@ -1,0 +1,3 @@
+import sqldb
+
+sqldb.dbinit()
