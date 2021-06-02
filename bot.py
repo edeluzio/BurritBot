@@ -371,18 +371,24 @@ async def valsignup(ctx):
 
     await author.send(
         "Welcome to the Valorant x Burrit database signup.\nOnce signed up, other users can do things like view your shop, MMR, and many more things to come!")
-    # time.sleep(3)
-    await author.send("First, respond with your Valorant username (without the #NA1)")
 
+    await author.send("First, respond with your Valorant username (without the #NA1).")
+    try:
+        valname = await client.wait_for('message', check=check(author), timeout=30.0)
+        valname = valname.content
+    except asyncio.TimeoutError:
+        return await author.send("Sorry, you took too long too respond. Please reenter .valsignup")
+
+    await author.send("Next, respond with your Riot username.")
     try:
         username = await client.wait_for('message', check=check(author), timeout=30.0)
         username = username.content
     except asyncio.TimeoutError:
         return await author.send("Sorry, you took too long too respond. Please reenter .valsignup")
 
+
     await author.send(
         "Next, respond with your Valorant password.\nYour password will NOT be saved to the database, but is needed to obtain authorization headers for HTTP requests. You are also free to delete these messages after responding with your password")
-
     try:
         password = await client.wait_for('message', check=check(author), timeout=30.0)
         password = password.content
@@ -398,7 +404,7 @@ async def valsignup(ctx):
         return
 
     # check db
-    data = {'username': username, 'password': password, 'authdata': vauth}
+    data = {'username': username, 'valname': valname, 'password': password, 'authdata': vauth}
     if sqldb.checkDB(data):
         errmsg = "This user has already signed up in the database"
         await author.send(errmsg)
@@ -417,14 +423,14 @@ async def shop(ctx):
     author = ctx.author
     channel = ctx.channel
     message = ctx.message.content
-    user = re.sub(r'(^.shop)', '', message).lstrip()
+    valname = re.sub(r'(^.shop)', '', message).lstrip()
 
-    if not (sqldb.checkDB({'username': user})):
-        embed = discord.Embed(title=(user + " is not registered in the database"))
+    if not (sqldb.checkDB({'valname': valname})):
+        embed = discord.Embed(title=(valname + " is not registered in the database"))
         await channel.send(embed=embed)
 
     else:
-        dbinfo = sqldb.getDB({'username': user})
+        dbinfo = sqldb.getDB({'valname': valname})
         vshop = val.fetchStore(dbinfo)
 
         skins = ''
@@ -439,7 +445,7 @@ async def shop(ctx):
                 skins = skins + names + '\n'
 
         # send message back
-        embed = discord.Embed(title=(user + "'s Valorant Store"))
+        embed = discord.Embed(title=(valname + "'s Valorant Store"))
         embed.add_field(name='Skins', value=skins)
         await channel.send(embed=embed)
 
@@ -450,16 +456,16 @@ async def rank(ctx):
     author = ctx.author
     channel = ctx.channel
     message = ctx.message.content
-    user = re.sub(r'(^.rank)', '', message).lstrip()
+    valname = re.sub(r'(^.rank)', '', message).lstrip()
 
-    if not (sqldb.checkDB({'username': user})):
-        embed = discord.Embed(title=(user + " is not registered in the database"))
+    if not (sqldb.checkDB({'valname': valname})):
+        embed = discord.Embed(title=(valname + " is not registered in the database"))
         await channel.send(embed=embed)
     else:
-        dbinfo = sqldb.getDB({'username': user})
+        dbinfo = sqldb.getDB({'valname': valname})
         mmrdata = val.mmr(dbinfo)
 
-        embed = discord.Embed(title=(user + "'s current Valorant Rank"))
+        embed = discord.Embed(title=(valname + "'s current Valorant Rank"))
         embed.add_field(name='Rank', value=mmrdata['rank'])
         embed.add_field(name='Elo in rank', value=mmrdata['elo'], inline=False)
         embed.add_field(name='Net elo from last game played', value=mmrdata['lastGame'])
