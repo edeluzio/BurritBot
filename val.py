@@ -41,24 +41,23 @@ def auth(username, password):
     # user_id
 
     headers = {
-        'X-Riot-Entitlements-JWT': entitlements_token,
         'Authorization': f'Bearer {access_token}',
+        'X-Riot-Entitlements-JWT': entitlements_token,
     }
+
     authdata = {
         'headers': headers,
         'user_id': user_id
     }
-    userdata = {
-        'username': username,
-        'authdata': authdata,
-    }
-    return userdata
+    return authdata
     session.close()
 
 
 def clientinfo(userdata):
+
+    authdata = auth(userdata['username'], userdata['password'])
     # get client version
-    r = requests.get(f'https://valorant-api.com/v1/version', headers=userdata['authdata']['headers'])
+    r = requests.get(f'https://valorant-api.com/v1/version', headers=authdata['headers'])
     version = r.json()
     num = version['data']['version']
     fnum = ''
@@ -78,15 +77,18 @@ def clientinfo(userdata):
 
 def fetchStore(userdata):
 
-    cvers = clientinfo(userdata)
-    userdata['authdata']['headers'].update(cvers)
+
+    authdata = auth(userdata['username'], userdata['password'])
 
     # Store Request
-    r = requests.get(f'https://pd.na.a.pvp.net/store/v2/storefront/' + userdata['authdata']['user_id'], headers=userdata['authdata']['headers'])
+    r = requests.get(f'https://pd.na.a.pvp.net/store/v2/storefront/' + authdata['user_id'],headers=authdata['headers'])
     store = r.json()
 
+    cvers = clientinfo(userdata)
+    authdata['headers'].update(cvers)
+
     # Content Request
-    r = requests.get(f'https://shared.na.a.pvp.net/content-service/v2/content', headers=userdata['authdata']['headers'])
+    r = requests.get(f'https://shared.na.a.pvp.net/content-service/v2/content', headers=authdata['headers'])
     data = r.json()
 
     featuredlength = store['FeaturedBundle']['Bundle']['Items'].__len__()
@@ -143,7 +145,7 @@ def fetchStore(userdata):
         pass
 
     # get the asset pack
-    r = requests.get(f'https://valorant-api.com/v1/weapons', headers=userdata['authdata']['headers'])
+    r = requests.get(f'https://valorant-api.com/v1/weapons', headers=authdata['headers'])
     assets = r.json()
 
     fskinimages = []
@@ -219,6 +221,7 @@ def getLatestSzn():
 
 def mmr(userdata):
 
+    userdata = auth(userdata['username'], userdata['password'])
     cvers = clientinfo(userdata)
     userdata['authdata']['headers'].update(cvers)
     url = 'https://pd.na.a.pvp.net/mmr/v1/players/' + userdata['authdata']['user_id']
@@ -227,13 +230,13 @@ def mmr(userdata):
     rating = r.json()
 
     season = getLatestSzn()
-    rating = rating['QueueSkills']['competitive']['SeasonalInfoBySeasonID'][season]
+    sznrating = rating['QueueSkills']['competitive']['SeasonalInfoBySeasonID'][season]
 
     mmrdata = {
-        'ranknum': rating['Rank'],
-        'elo': rating['RankedRating'],
-        'wins': rating['NumberOfWins'],
-        'losses': rating['NumberOfGames'] - rating['NumberOfWins']
+        'ranknum': sznrating['Rank'],
+        'elo': sznrating['RankedRating'],
+        'wins': sznrating['NumberOfWins'],
+        'losses': sznrating['NumberOfGames'] - sznrating['NumberOfWins']
     }
 
 

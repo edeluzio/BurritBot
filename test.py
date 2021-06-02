@@ -8,8 +8,8 @@ password = 'Rackispro11!'
 
 data = val.auth(username, password)
 # val.fetchStore(data)
-val.mmr(data)
-# val.clientinfo(data)
+# val.mmr(data)
+val.clientinfo(data)
 print()
 
 # sqldb.dbinit()

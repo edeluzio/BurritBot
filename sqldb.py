@@ -27,6 +27,7 @@ def dbinit():
 
     curs.execute("""CREATE TABLE users (
                     username text,
+                    password text,
                     entitlements text,
                     authorization text,
                     user_id text
@@ -56,14 +57,15 @@ def addDB(data):
     curs = conn.cursor()
 
     username = data['username']
+    password = data['password']
     entitlements = data['authdata']['headers']['X-Riot-Entitlements-JWT']
     authorization = data['authdata']['headers']['Authorization']
     user_id = data['authdata']['user_id']
 
     # add to db
-    curs.execute("INSERT INTO users VALUES (:username, :entitlements, :authorization, :user_id)",
+    curs.execute("INSERT INTO users VALUES (:username, :password, :entitlements, :authorization, :user_id)",
                  {'username': username, 'entitlements': entitlements, 'authorization': authorization,
-                  'user_id': user_id})
+                  'user_id': user_id, 'password': password})
 
     # close db
     conn.commit()
@@ -87,8 +89,14 @@ def getDB(data):
         'Authorization': check[0][2],
     }
 
-    sqldata = {
+    authdata = {
         'headers': headers,
         'user_id': check[0][3],
     }
-    return sqldata
+
+    userdata = {
+        'authdata': authdata,
+        'username': username,
+        'password': check[0][1]
+    }
+    return userdata

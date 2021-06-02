@@ -398,7 +398,7 @@ async def valsignup(ctx):
         return
 
     # check db
-    data = {'username': username, 'authdata': vauth}
+    data = {'username': username, 'password': password, 'authdata': vauth}
     if sqldb.checkDB(data):
         errmsg = "This user has already signed up in the database"
         await author.send(errmsg)
