@@ -21,7 +21,7 @@ import val
 #
 
 def dbinit():
-    conn = sqlite3.connect('../db/user.db')
+    conn = sqlite3.connect('db/user.db')
     curs = conn.cursor()
 
     curs.execute("""CREATE TABLE users (
@@ -33,7 +33,7 @@ def dbinit():
 
 def checkDB(data):
     #connect to DB
-    conn = sqlite3.connect('../db/user.db')
+    conn = sqlite3.connect('db/user.db')
     curs = conn.cursor()
 
     username = data['username']
@@ -50,7 +50,7 @@ def checkDB(data):
 
 def addDB(data):
     #connect to DB
-    conn = sqlite3.connect('../db/user.db')
+    conn = sqlite3.connect('db/user.db')
     curs = conn.cursor()
 
     username = data['username']
@@ -68,7 +68,7 @@ def addDB(data):
 def getDB(data):
 
     #connect to DB
-    conn = sqlite3.connect('../db/user.db')
+    conn = sqlite3.connect('db/user.db')
     curs = conn.cursor()
 
     if not (checkDB(data)):

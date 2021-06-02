@@ -16,7 +16,7 @@ import val
 client = commands.Bot(command_prefix='.')
 
 #database stuff
-conn = sqlite3.connect('../db/user.db')
+conn = sqlite3.connect('db/user.db')
 curs = conn.cursor()
 
 poll = []
