@@ -9,21 +9,22 @@ import json
 import random
 import time
 import sqlite3
-import dbinit
+import sqldb
+import asyncio
+import val
 
 client = commands.Bot(command_prefix='.')
 
 #database stuff
 conn = sqlite3.connect('../db/user.db')
 curs = conn.cursor()
-curs.execute("""CREATE TABLE users (
-                username text,
-                password text,
-                )""")
-
 
 poll = []
 
+def check(author):
+    def inner_check(message):
+        return message.author == author
+    return inner_check
 
 def is_me(m):
     return m.author == client.user
@@ -365,117 +366,85 @@ async def addpeak(ctx):
         embed = discord.Embed(title=(user + " has been added to the list of overpeakers"))
         await channel.send(embed=embed)
 
-
-@client.command()
-async def virginlist(ctx):
-    try:
-        file = open('texts/virgins.txt', 'r')
-    except:
-        file = open('texts/virgins.txt', 'w')
-
-    l = file.read().split('\n')
-
-
-    channel = ctx.channel
-    virgins = ''
-    for person in l:
-        if not (person == ' '):
-            virgins = virgins + person + '\n'
-
-    embed = discord.Embed(title=("Current Virgins:"))
-    embed.add_field(name='________________________', value=str(virgins))
-    await channel.send(embed=embed)
-
-@client.command()
-async def virgin(ctx):
-    channel = ctx.channel
-    message = ctx.message
-    message = message.content
-    user = re.sub(r'(^.virgin)', '', message).lstrip()
-
-    try:
-        file = open('texts/virgins.txt', 'r')
-    except:
-        file = open('texts/virgins.txt', 'w')
-
-    l = file.read().split('\n')
-
-    matching = [s for s in l if (user + ':') in s]
-
-    if matching.__len__() == 0:
-        virgins = ''
-        for person in l:
-            if not (person == ' '):
-                virgins = virgins + person + '\n'
-
-        embed = discord.Embed(title=(user + " is not currently in the virgin system"))
-        embed.add_field(name='Current Virgins:', value=str(virgins))
-        embed.add_field(name='To add to virgin list:', value=str("Type .addvirgin (USER)"))
-        await channel.send(embed=embed)
-
-    else:
-        list2 = []
-        for person in l:
-            list2.append(person.split(" "))
-        for person in list2:
-            if person[0] == (user + ':'):
-                count = int(person[1]) + 1
-
-        search = user + ': ' + str(count - 1)
-        result = user + ': ' + str(count)
-
-        l.pop(l.index(search))
-        l.append(result)
-        l = sorted(l)
-
-        filewrite = ''
-        for person in l:
-            if not (person == ' '):
-                filewrite = filewrite + person + '\n'
-
-        file = open('texts/virgins.txt', 'w')
-        file.write(filewrite.lstrip())
-        embed = discord.Embed(title=(user + " acted like a virgin again"))
-        embed.add_field(name='What a fucking virgin', value=("He's virgined " + str(count) + ' times'))
-        await channel.send(embed=embed)
-
-@client.command()
-async def addvirgin(ctx):
-    channel = ctx.channel
-    message = ctx.message
-    message = message.content
-    user = re.sub(r'(^.addvirgin)', '', message).lstrip()
-
-    try:
-        file = open('texts/virgins.txt', 'a')
-    except:
-        file = open('texts/virgins.txt', 'w')
-    file.write(user + ": " + str(0) + '\n')
-
-    embed = discord.Embed(title=(user + " has been added to the list of overvirginers"))
-    await channel.send(embed=embed)
-
 @client.command()
 async def valsignup(ctx):
     author = ctx.author
-    channel = ctx.channnel
+    channel = ctx.channel
     message = ctx.message
 
-    await author.send("hello")
+    await author.send("Welcome to the Valorant x Burrit database signup.\nOnce signed up, other users can do things like view your shop, MMR, and many more things to come!")
+    # time.sleep(3)
+    await author.send("First, respond with your Valorant username (without the #NA1)")
 
+    try:
+        username = await client.wait_for('message',check=check(author), timeout=30.0)
+        username = username.content
+    except asyncio.TimeoutError:
+        return await author.send("Sorry, you took too long too respond. Please reenter .valsignup")
+
+    await author.send("Next, respond with your Valorant password.\nYour password will NOT be saved to the database, but is needed to obtain authorization headers for HTTP requests. You are also free to delete these messages after responding with your password")
+
+    try:
+        password = await client.wait_for('message',check=check(author), timeout=30.0)
+        password = password.content
+    except asyncio.TimeoutError:
+        return await author.send("Sorry, you took too long too respond. Please reenter .valsignup")
+
+    # check if val acc/ get val auth stuff
+    try:
+        vauth = val.auth(username, password)
+    except:
+        errmsg = "The username: " + username + " and password: " + password + " is not associated with a Riot account. Please reenter .valsignup"
+        await author.send(errmsg)
+        return
+
+    #check db
+    data = {'username': username, 'authdata': vauth}
+    if sqldb.checkDB(data):
+        errmsg = "This user has already signed up in the database"
+        await author.send(errmsg)
+        return
+
+    #add to db
+    else:
+        sqldb.addDB(data)
+
+        #say congrats
+        return await author.send("You are now registered in the database!")
 
 @client.command()
 async def shop(ctx):
     author = ctx.author
-    channel = ctx.channnel
-    message = ctx.message
-
-
+    channel = ctx.channel
+    message = ctx.message.content
     user = re.sub(r'(^.shop)', '', message).lstrip()
 
+    if not (sqldb.checkDB({'username': user})):
+        embed = discord.Embed(title=(user + " is not registered in the database"))
+        await channel.send(embed=embed)
+
+    else:
+        dbinfo = sqldb.getDB({'username': user})
+        vshop = val.fetchStore(dbinfo)
+
+        skins = ''
+        for names in vshop['feat']['names']:
+            skins = skins + names + '\n'
+
+        for names in vshop['norm']['names']:
+            skins = skins + names + '\n'
+
+        if 'bon' in vshop:
+            for names in vshop['bon']['names']:
+                skins = skins + names + '\n'
+
+        # send message back
+        embed = discord.Embed(title=(user + "'s Valorant Store"))
+        embed.add_field(name='Skins', value=skins)
+        await channel.send(embed=embed)
 
 
-    dbinit.addDB()
+
 
 
 

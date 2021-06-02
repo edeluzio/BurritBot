@@ -195,7 +195,3 @@ def fetchStore(authdata):
         skinsdata['bon'] = bon
 
     return skinsdata
-
-
-test = auth('starkazor', 'Rackispro11!')
-print(fetchStore(test))
