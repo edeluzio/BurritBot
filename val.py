@@ -221,12 +221,12 @@ def getLatestSzn():
 
 def mmr(userdata):
 
-    userdata = auth(userdata['username'], userdata['password'])
+    authdata = auth(userdata['username'], userdata['password'])
     cvers = clientinfo(userdata)
-    userdata['authdata']['headers'].update(cvers)
-    url = 'https://pd.na.a.pvp.net/mmr/v1/players/' + userdata['authdata']['user_id']
+    authdata['headers'].update(cvers)
+    url = 'https://pd.na.a.pvp.net/mmr/v1/players/' + authdata['user_id']
 
-    r = requests.get(url, headers=userdata['authdata']['headers'])
+    r = requests.get(url, headers=authdata['headers'])
     rating = r.json()
 
     season = getLatestSzn()
@@ -236,7 +236,8 @@ def mmr(userdata):
         'ranknum': sznrating['Rank'],
         'elo': sznrating['RankedRating'],
         'wins': sznrating['NumberOfWins'],
-        'losses': sznrating['NumberOfGames'] - sznrating['NumberOfWins']
+        'losses': sznrating['NumberOfGames'] - sznrating['NumberOfWins'],
+        'lastGame': rating['LatestCompetitiveUpdate']['RankedRatingEarned']
     }
 
 
@@ -248,4 +249,4 @@ def mmr(userdata):
             mmrdata['rank'] = ranks['tierName']
 
 
-    print(rating)
+    return mmrdata

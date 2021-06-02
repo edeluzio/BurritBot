@@ -2,14 +2,11 @@ import sqldb
 import val
 import sqldb
 
-username = 'starkazor'
-password = 'Rackispro11!'
-
-
-data = val.auth(username, password)
-# val.fetchStore(data)
+# data = {'username': username}
+# data = sqldb.getDB(data)
+# # val.fetchStore(data)
 # val.mmr(data)
-val.clientinfo(data)
+# val.clientinfo(data)
 print()
 
 # sqldb.dbinit()

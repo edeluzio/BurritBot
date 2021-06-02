@@ -444,4 +444,28 @@ async def shop(ctx):
         await channel.send(embed=embed)
 
 
+@client.command()
+async def rank(ctx):
+
+    author = ctx.author
+    channel = ctx.channel
+    message = ctx.message.content
+    user = re.sub(r'(^.rank)', '', message).lstrip()
+
+    if not (sqldb.checkDB({'username': user})):
+        embed = discord.Embed(title=(user + " is not registered in the database"))
+        await channel.send(embed=embed)
+    else:
+        dbinfo = sqldb.getDB({'username': user})
+        mmrdata = val.mmr(dbinfo)
+
+        embed = discord.Embed(title=(user + "'s current Valorant Rank"))
+        embed.add_field(name='Rank', value=mmrdata['rank'])
+        embed.add_field(name='Elo in rank', value=mmrdata['elo'], inline=False)
+        embed.add_field(name='Net elo from last game played', value=mmrdata['lastGame'])
+        embed.add_field(name='Wins', value=mmrdata['wins'], inline=False)
+        embed.add_field(name='Losses', value=mmrdata['losses'])
+
+        await channel.send(embed=embed)
+
 client.run('ODM4MTAzNjY5MzcwNjUwNzE1.YI2O3Q.Tuq8ZqrLshUVxyw0Qc2p6_nu-A4')
