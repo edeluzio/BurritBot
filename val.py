@@ -233,7 +233,7 @@ def mmr(userdata):
     sznrating = rating['QueueSkills']['competitive']['SeasonalInfoBySeasonID'][season]
 
     mmrdata = {
-        'ranknum': sznrating['Rank'],
+        'ranknum': sznrating['CompetitiveTier'],
         'elo': sznrating['RankedRating'],
         'wins': sznrating['NumberOfWins'],
         'losses': sznrating['NumberOfGames'] - sznrating['NumberOfWins'],
