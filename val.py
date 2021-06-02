@@ -4,6 +4,7 @@ import aiohttp
 import re
 import requests
 
+
 def auth(username, password):
     session = requests.session()
     data = {
@@ -40,19 +41,24 @@ def auth(username, password):
     # user_id
 
     headers = {
-    'X-Riot-Entitlements-JWT': entitlements_token,
-    'Authorization': f'Bearer {access_token}',
+        'X-Riot-Entitlements-JWT': entitlements_token,
+        'Authorization': f'Bearer {access_token}',
     }
     authdata = {
-            'headers': headers,
-            'user_id': user_id
-        }
-    return authdata
+        'headers': headers,
+        'user_id': user_id
+    }
+    userdata = {
+        'username': username,
+        'authdata': authdata,
+    }
+    return userdata
     session.close()
 
-def fetchStore(authdata):
+
+def clientinfo(userdata):
     # get client version
-    r = requests.get(f'https://valorant-api.com/v1/version', headers=authdata['headers'])
+    r = requests.get(f'https://valorant-api.com/v1/version', headers=userdata['authdata']['headers'])
     version = r.json()
     num = version['data']['version']
     fnum = ''
@@ -63,15 +69,24 @@ def fetchStore(authdata):
             fnum = fnum + element
     cvers = version['data']['branch'] + '-shipping-' + version['data']['buildVersion'] + '-' + fnum
 
-    authdata['headers']['X-Riot-ClientVersion'] = cvers
-    authdata['headers']['X-Riot-ClientPlatform'] = "ew0KCSJwbGF0Zm9ybVR5cGUiOiAiUEMiLA0KCSJwbGF0Zm9ybU9TIjogIldpbmRvd3MiLA0KCSJwbGF0Zm9ybU9TVmVyc2lvbiI6ICIxMC4wLjE5MDQyLjEuMjU2LjY0Yml0IiwNCgkicGxhdGZvcm1DaGlwc2V0IjogIlVua25vd24iDQp9"
+    client = {
+        'X-Riot-ClientPlatform': "ew0KCSJwbGF0Zm9ybVR5cGUiOiAiUEMiLA0KCSJwbGF0Zm9ybU9TIjogIldpbmRvd3MiLA0KCSJwbGF0Zm9ybU9TVmVyc2lvbiI6ICIxMC4wLjE5MDQyLjEuMjU2LjY0Yml0IiwNCgkicGxhdGZvcm1DaGlwc2V0IjogIlVua25vd24iDQp9",
+        'X-Riot-ClientVersion': cvers,
+              }
+    return client
+
+
+def fetchStore(userdata):
+
+    cvers = clientinfo(userdata)
+    userdata['authdata']['headers'].update(cvers)
 
     # Store Request
-    r = requests.get(f'https://pd.na.a.pvp.net/store/v2/storefront/' + authdata['user_id'], headers=authdata['headers'])
+    r = requests.get(f'https://pd.na.a.pvp.net/store/v2/storefront/' + userdata['authdata']['user_id'], headers=userdata['authdata']['headers'])
     store = r.json()
 
     # Content Request
-    r = requests.get(f'https://shared.na.a.pvp.net/content-service/v2/content', headers=authdata['headers'])
+    r = requests.get(f'https://shared.na.a.pvp.net/content-service/v2/content', headers=userdata['authdata']['headers'])
     data = r.json()
 
     featuredlength = store['FeaturedBundle']['Bundle']['Items'].__len__()
@@ -128,7 +143,7 @@ def fetchStore(authdata):
         pass
 
     # get the asset pack
-    r = requests.get(f'https://valorant-api.com/v1/weapons', headers=authdata['headers'])
+    r = requests.get(f'https://valorant-api.com/v1/weapons', headers=userdata['authdata']['headers'])
     assets = r.json()
 
     fskinimages = []
@@ -195,3 +210,39 @@ def fetchStore(authdata):
         skinsdata['bon'] = bon
 
     return skinsdata
+
+def getLatestSzn():
+    response = requests.get("https://valorant-api.com/v1/seasons")
+    for season in response.json()["data"]:
+        uuid = season["uuid"]
+    return uuid
+
+def mmr(userdata):
+
+    cvers = clientinfo(userdata)
+    userdata['authdata']['headers'].update(cvers)
+    url = 'https://pd.na.a.pvp.net/mmr/v1/players/' + userdata['authdata']['user_id']
+
+    r = requests.get(url, headers=userdata['authdata']['headers'])
+    rating = r.json()
+
+    season = getLatestSzn()
+    rating = rating['QueueSkills']['competitive']['SeasonalInfoBySeasonID'][season]
+
+    mmrdata = {
+        'ranknum': rating['Rank'],
+        'elo': rating['RankedRating'],
+        'wins': rating['NumberOfWins'],
+        'losses': rating['NumberOfGames'] - rating['NumberOfWins']
+    }
+
+
+    r =requests.get('https://valorant-api.com/v1/competitivetiers')
+    tiers = r.json()
+
+    for ranks in tiers['data'][1]['tiers']:
+        if mmrdata['ranknum'] == ranks['tier']:
+            mmrdata['rank'] = ranks['tierName']
+
+
+    print(rating)

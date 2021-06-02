@@ -8,23 +8,20 @@ from bs4 import BeautifulSoup
 import json
 import random
 import time
-import sqlite3
 import sqldb
 import asyncio
 import val
 
 client = commands.Bot(command_prefix='.')
-
-#database stuff
-conn = sqlite3.connect('db/user.db')
-curs = conn.cursor()
-
 poll = []
+
 
 def check(author):
     def inner_check(message):
         return message.author == author
+
     return inner_check
+
 
 def is_me(m):
     return m.author == client.user
@@ -48,8 +45,6 @@ async def on_ready():
 
 @client.command()
 async def update(ctx):
-
-
     channel = discord.utils.get(ctx.guild.channels, name="burrit-cinemas-ratings")
     messages = await channel.history(limit=500).flatten()
     tmessages = []
@@ -279,7 +274,6 @@ async def peaklist(ctx):
 
     l = file.read().split('\n')
 
-
     channel = ctx.channel
     peaks = ''
     for person in l:
@@ -289,6 +283,7 @@ async def peaklist(ctx):
     embed = discord.Embed(title=("Current Overpeakers:"))
     embed.add_field(name='________________________', value=str(peaks))
     await channel.send(embed=embed)
+
 
 @client.command()
 async def peak(ctx):
@@ -343,6 +338,7 @@ async def peak(ctx):
         embed.add_field(name='What a fucking dumbass', value=("He's overpeaked " + str(count) + ' times'))
         await channel.send(embed=embed)
 
+
 @client.command()
 async def addpeak(ctx):
     channel = ctx.channel
@@ -366,26 +362,29 @@ async def addpeak(ctx):
         embed = discord.Embed(title=(user + " has been added to the list of overpeakers"))
         await channel.send(embed=embed)
 
+
 @client.command()
 async def valsignup(ctx):
     author = ctx.author
     channel = ctx.channel
     message = ctx.message
 
-    await author.send("Welcome to the Valorant x Burrit database signup.\nOnce signed up, other users can do things like view your shop, MMR, and many more things to come!")
+    await author.send(
+        "Welcome to the Valorant x Burrit database signup.\nOnce signed up, other users can do things like view your shop, MMR, and many more things to come!")
     # time.sleep(3)
     await author.send("First, respond with your Valorant username (without the #NA1)")
 
     try:
-        username = await client.wait_for('message',check=check(author), timeout=30.0)
+        username = await client.wait_for('message', check=check(author), timeout=30.0)
         username = username.content
     except asyncio.TimeoutError:
         return await author.send("Sorry, you took too long too respond. Please reenter .valsignup")
 
-    await author.send("Next, respond with your Valorant password.\nYour password will NOT be saved to the database, but is needed to obtain authorization headers for HTTP requests. You are also free to delete these messages after responding with your password")
+    await author.send(
+        "Next, respond with your Valorant password.\nYour password will NOT be saved to the database, but is needed to obtain authorization headers for HTTP requests. You are also free to delete these messages after responding with your password")
 
     try:
-        password = await client.wait_for('message',check=check(author), timeout=30.0)
+        password = await client.wait_for('message', check=check(author), timeout=30.0)
         password = password.content
     except asyncio.TimeoutError:
         return await author.send("Sorry, you took too long too respond. Please reenter .valsignup")
@@ -398,19 +397,20 @@ async def valsignup(ctx):
         await author.send(errmsg)
         return
 
-    #check db
+    # check db
     data = {'username': username, 'authdata': vauth}
     if sqldb.checkDB(data):
         errmsg = "This user has already signed up in the database"
         await author.send(errmsg)
         return
 
-    #add to db
+    # add to db
     else:
         sqldb.addDB(data)
 
-        #say congrats
+        # say congrats
         return await author.send("You are now registered in the database!")
+
 
 @client.command()
 async def shop(ctx):
@@ -442,13 +442,6 @@ async def shop(ctx):
         embed = discord.Embed(title=(user + "'s Valorant Store"))
         embed.add_field(name='Skins', value=skins)
         await channel.send(embed=embed)
-
-
-
-
-
-
-
 
 
 client.run('ODM4MTAzNjY5MzcwNjUwNzE1.YI2O3Q.Tuq8ZqrLshUVxyw0Qc2p6_nu-A4')

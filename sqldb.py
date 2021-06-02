@@ -1,6 +1,7 @@
-#database stuff
+# database stuff
 import sqlite3
 import val
+
 
 # conn = sqlite3.connect('../db/user.db')
 # curs = conn.cursor()
@@ -31,14 +32,15 @@ def dbinit():
                     user_id text
                     )""")
 
+
 def checkDB(data):
-    #connect to DB
+    # connect to DB
     conn = sqlite3.connect('db/user.db')
     curs = conn.cursor()
 
     username = data['username']
 
-    #check if in db
+    # check if in db
     curs.execute("SELECT * FROM users WHERE username=:username", {'username': username})
     check = curs.fetchall()
 
@@ -49,7 +51,7 @@ def checkDB(data):
 
 
 def addDB(data):
-    #connect to DB
+    # connect to DB
     conn = sqlite3.connect('db/user.db')
     curs = conn.cursor()
 
@@ -58,16 +60,18 @@ def addDB(data):
     authorization = data['authdata']['headers']['Authorization']
     user_id = data['authdata']['user_id']
 
-    #add to db
-    curs.execute("INSERT INTO users VALUES (:username, :entitlements, :authorization, :user_id)", {'username': username, 'entitlements': entitlements, 'authorization': authorization, 'user_id': user_id})
+    # add to db
+    curs.execute("INSERT INTO users VALUES (:username, :entitlements, :authorization, :user_id)",
+                 {'username': username, 'entitlements': entitlements, 'authorization': authorization,
+                  'user_id': user_id})
 
-    #close db
+    # close db
     conn.commit()
     conn.close()
 
-def getDB(data):
 
-    #connect to DB
+def getDB(data):
+    # connect to DB
     conn = sqlite3.connect('db/user.db')
     curs = conn.cursor()
 
@@ -88,4 +92,3 @@ def getDB(data):
         'user_id': check[0][3],
     }
     return sqldata
-

@@ -5,12 +5,13 @@ import sqldb
 username = 'starkazor'
 password = 'Rackispro11!'
 
-data = {
-    'authdata': val.auth(username, password),
-    'username': username,
-        }
 
-val.auth(username,password)
+data = val.auth(username, password)
+# val.fetchStore(data)
+val.mmr(data)
+# val.clientinfo(data)
+print()
+
 # sqldb.dbinit()
 # print(sqldb.checkDB(data))
 # sqldb.addDB(data)
