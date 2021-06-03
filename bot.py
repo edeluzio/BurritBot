@@ -467,7 +467,8 @@ async def rank(ctx):
         mmrdata = val.mmr(dbinfo)
 
         dec = Decimal(10) ** -2
-        mmrperc = (mmrdata['wins'] / mmrdata['losses'] * 100)
+        mmrtotal = mmrdata['wins'] + mmrdata['losses']
+        mmrperc = (mmrdata['wins'] / mmrtotal * 100)
         mmrperc = Decimal(mmrperc).quantize(dec)
         mmrperc = str(mmrperc) + '%'
 
