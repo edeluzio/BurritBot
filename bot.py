@@ -1,3 +1,4 @@
+from decimal import Decimal
 import discord
 import re
 from datetime import datetime
@@ -465,12 +466,18 @@ async def rank(ctx):
         dbinfo = sqldb.getDB({'valname': valname})
         mmrdata = val.mmr(dbinfo)
 
+        dec = Decimal(10) ** -2
+        mmrperc = (mmrdata['wins'] / mmrdata['losses'] * 100)
+        mmrperc = Decimal(mmrperc).quantize(dec)
+        mmrperc = str(mmrperc) + '%'
+
         embed = discord.Embed(title=(valname + "'s current Valorant Rank"))
         embed.add_field(name='Rank', value=mmrdata['rank'])
         embed.add_field(name='Elo in rank', value=mmrdata['elo'], inline=False)
         embed.add_field(name='Net elo from last game played', value=mmrdata['lastGame'])
         embed.add_field(name='Wins', value=mmrdata['wins'], inline=False)
         embed.add_field(name='Losses', value=mmrdata['losses'])
+        embed.add_field(name='Win Percentage', value=mmrperc,inline=False)
 
         await channel.send(embed=embed)
 
