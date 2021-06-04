@@ -484,6 +484,67 @@ async def rank(ctx):
 
 
 @client.command()
+async def pastrank(ctx):
+    author = ctx.author
+    channel = ctx.channel
+    message = ctx.message.content
+    config = re.sub(r'(^.pastrank)', '', message).lstrip()
+
+    config = config.split(' ')
+
+
+
+    valname = config[1]
+    episode = config[0]
+    ea = 'Episode ' + episode[1] + ' Act ' + episode[3] + ' Valorant Rank'
+    act = int(episode[3])
+    episode = 'EPISODE ' + episode[1]
+
+    if act > 3 or act < 1:
+        embed = discord.Embed(title=( + "This is not a valid Act"))
+        await channel.send(embed=embed)
+        return
+
+
+    response = requests.get("https://valorant-api.com/v1/seasons")
+    seasons = response.json()
+    seasons = seasons['data']
+
+
+    for szns in seasons:
+        if szns['displayName'] == episode:
+            index = seasons.index(szns) + act
+
+    if not (index):
+        print()
+
+    else:
+        if not (sqldb.checkDB({'valname': valname})):
+            embed = discord.Embed(title=(valname + " is not registered in the database"))
+            await channel.send(embed=embed)
+            return
+        else:
+            szn = seasons[index]['uuid']
+            dbinfo = sqldb.getDB({'valname': valname})
+            mmrdata = val.pastmmr(dbinfo,szn)
+
+            dec = Decimal(10) ** -2
+            mmrtotal = mmrdata['wins'] + mmrdata['losses']
+            mmrperc = (mmrdata['wins'] / mmrtotal * 100)
+            mmrperc = Decimal(mmrperc).quantize(dec)
+            mmrperc = str(mmrperc) + '%'
+
+            embed = discord.Embed(title=(valname + "'s " + ea))
+            embed.add_field(name='Rank at end of Act', value=mmrdata['rank'])
+            embed.add_field(name='Act Rank', value=mmrdata['sznrank'], inline=False)
+            embed.add_field(name='Wins', value=mmrdata['wins'], inline=False)
+            embed.add_field(name='Losses', value=mmrdata['losses'])
+            embed.add_field(name='Win Percentage', value=mmrperc,inline=False)
+
+            await channel.send(embed=embed)
+
+
+@client.command()
 async def users(ctx):
     author = ctx.author
     channel = ctx.channel

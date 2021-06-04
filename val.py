@@ -241,12 +241,42 @@ def mmr(userdata):
     }
 
 
-    r =requests.get('https://valorant-api.com/v1/competitivetiers')
+    r = requests.get('https://valorant-api.com/v1/competitivetiers')
     tiers = r.json()
 
     for ranks in tiers['data'][1]['tiers']:
         if mmrdata['ranknum'] == ranks['tier']:
             mmrdata['rank'] = ranks['tierName']
 
-
     return mmrdata
+
+def pastmmr(userdata,szn):
+
+    authdata = auth(userdata['username'], userdata['password'])
+    cvers = clientinfo(userdata)
+    authdata['headers'].update(cvers)
+    url = 'https://pd.na.a.pvp.net/mmr/v1/players/' + authdata['user_id']
+
+    r = requests.get(url, headers=authdata['headers'])
+    seasons = r.json()
+
+    past = seasons['QueueSkills']['competitive']['SeasonalInfoBySeasonID'][szn]
+
+    mmrdata = {
+    'ranknum': past['CompetitiveTier'],
+    'sznrank': past['Rank'],
+    'wins': past['NumberOfWins'],
+    'losses': past['NumberOfGames'] - past['NumberOfWins'],
+    }
+
+    r = requests.get('https://valorant-api.com/v1/competitivetiers')
+    tiers = r.json()
+
+    for ranks in tiers['data'][1]['tiers']:
+        if mmrdata['ranknum'] == ranks['tier']:
+            mmrdata['rank'] = ranks['tierName']
+        if mmrdata['sznrank'] == ranks['tier']:
+            mmrdata['sznrank'] = ranks['tierName']
+    print()
+    return mmrdata
+
