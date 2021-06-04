@@ -35,6 +35,20 @@ def dbinit():
                     )""")
 
 
+def getAll():
+    conn = sqlite3.connect('db/user.db')
+    curs = conn.cursor()
+
+    curs.execute("SELECT * FROM users")
+    check = curs.fetchall()
+
+    userlist = ''
+    for users in check:
+        userlist = userlist + users[1] + '\n'
+
+
+    return userlist
+
 def checkDB(data):
     # connect to DB
     conn = sqlite3.connect('db/user.db')

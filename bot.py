@@ -482,4 +482,16 @@ async def rank(ctx):
 
         await channel.send(embed=embed)
 
+
+@client.command()
+async def users(ctx):
+    author = ctx.author
+    channel = ctx.channel
+    message = ctx.message.content
+
+    embed = discord.Embed(title='Users Currently Registered')
+    embed.add_field(name='Database ID', value=sqldb.getAll())
+    await channel.send(embed=embed)
+
+
 client.run('ODM4MTAzNjY5MzcwNjUwNzE1.YI2O3Q.Tuq8ZqrLshUVxyw0Qc2p6_nu-A4')
