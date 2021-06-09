@@ -215,8 +215,10 @@ def fetchStore(userdata):
 
 def getLatestSzn():
     response = requests.get("https://valorant-api.com/v1/seasons")
-    for season in response.json()["data"]:
-        uuid = season["uuid"]
+    r=response.json()
+    # for season in r["data"]:
+    #     uuid = season["uuid"]
+    uuid = r["data"][8]["uuid"]
     return uuid
 
 def mmr(userdata):
