@@ -434,20 +434,25 @@ async def shop(ctx):
         dbinfo = sqldb.getDB({'valname': valname})
         vshop = val.fetchStore(dbinfo)
 
-        skins = ''
+        fskins = nskins = ''
+
         for names in vshop['feat']['names']:
-            skins = skins + names + '\n'
+            fskins = fskins + names + '\n'
 
         for names in vshop['norm']['names']:
-            skins = skins + names + '\n'
+            nskins = nskins + names + '\n'
 
+        bskins = None
         if 'bon' in vshop:
+            bskins = ''
             for names in vshop['bon']['names']:
-                skins = skins + names + '\n'
+                bskins = bskins + names + '\n'
 
         # send message back
         embed = discord.Embed(title=(valname + "'s Valorant Store"))
-        embed.add_field(name='Skins', value=skins)
+        embed.add_field(name='Featured Shop', value=fskins)
+        embed.add_field(name='Regular Shop', value=nskins)
+        embed.add_field(name='Night Shop', value=bskins or "You currently have no Night Shop")
         await channel.send(embed=embed)
 
 
