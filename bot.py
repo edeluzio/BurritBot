@@ -438,12 +438,12 @@ async def shop(ctx):
 
         index = 0
         for names in vshop['feat']['names']:
-            fskins = fskins + names + ' - ' + str(vshop['feat']['prices'][index]) + ' VP' + '\n'
+            fskins = fskins + names + '\t\t ---- ' + str(vshop['feat']['prices'][index]) + ' VP' + '\n'
             index = index + 1
 
         index = 0
         for names in vshop['norm']['names']:
-            nskins = nskins + names + ' - ' + str(vshop['norm']['prices'][index]) + ' VP' + '\n'
+            nskins = nskins + names + '\t\t ---- ' + str(vshop['norm']['prices'][index]) + ' VP' + '\n'
             index = index + 1
 
         bskins = None
@@ -451,7 +451,7 @@ async def shop(ctx):
         if 'bon' in vshop:
             bskins = ''
             for names in vshop['bon']['names']:
-                bskins = bskins + names + ' - ' + str(vshop['bon']['prices'][index]) + ' VP' + '\n'
+                bskins = bskins + names + '\t\t ---- ' + str(vshop['bon']['prices'][index]) + ' VP' + '\n'
                 index = index + 1
         # send message back
         embed = discord.Embed(title=(valname + "'s Valorant Store"))
