@@ -436,23 +436,28 @@ async def shop(ctx):
 
         fskins = nskins = ''
 
+        index = 0
         for names in vshop['feat']['names']:
-            fskins = fskins + names + '\n'
+            fskins = fskins + names + ' - ' + str(vshop['feat']['prices'][index]) + ' VP' + '\n'
+            index = index + 1
 
+        index = 0
         for names in vshop['norm']['names']:
-            nskins = nskins + names + '\n'
+            nskins = nskins + names + ' - ' + str(vshop['norm']['prices'][index]) + ' VP' + '\n'
+            index = index + 1
 
         bskins = None
+        index = 0
         if 'bon' in vshop:
             bskins = ''
             for names in vshop['bon']['names']:
-                bskins = bskins + names + '\n'
-
+                bskins = bskins + names + ' - ' + str(vshop['bon']['prices'][index]) + ' VP' + '\n'
+                index = index + 1
         # send message back
         embed = discord.Embed(title=(valname + "'s Valorant Store"))
-        embed.add_field(name='Featured Shop', value=fskins)
-        embed.add_field(name='Regular Shop', value=nskins)
-        embed.add_field(name='Night Shop', value=bskins or "You currently have no Night Shop")
+        embed.add_field(name='Featured Shop', value=fskins, inline=False)
+        embed.add_field(name='Regular Shop', value=nskins, inline=False)
+        embed.add_field(name='Night Shop', value=bskins or "You currently have no Night Shop", inline=False)
         await channel.send(embed=embed)
 
 

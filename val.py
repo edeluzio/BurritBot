@@ -110,6 +110,10 @@ def fetchStore(userdata):
     nprices = []
     bprices = []
 
+    #get daily shop prices
+    r = requests.get('https://pd.na.a.pvp.net/store/v1/offers/', headers=authdata['headers'])
+    dailyprice = r.json()
+
     # get featured ids, prices and append
     for i in range(featuredlength):
         fskins.append(store['FeaturedBundle']['Bundle']['Items'][i]['Item']['ItemID'])
@@ -124,7 +128,6 @@ def fetchStore(userdata):
     # get normal ids
     for k in range(normallength):
         nskins.append(store['SkinsPanelLayout']['SingleItemOffers'][k])
-        nprices.append(store['FeaturedBundle']['Bundle']['Items'][k]['BasePrice'])
     # append weapon name to list
     for j in range(nskins.__len__()):
         for l in range(data['SkinLevels'].__len__()):
@@ -135,7 +138,7 @@ def fetchStore(userdata):
     try:
         for m in range(bonuslength):
             bskins.append(store['BonusStore']['BonusStoreOffers'][m]['Offer']['OfferID'])
-            bprices.append(store['FeaturedBundle']['Bundle']['Items'][m]['BasePrice'])
+            bprices.append(list(store['BonusStore']['BonusStoreOffers'][m]['DiscountCosts'].values())[0])
         # append weapon name to list
         for j in range(bskins.__len__()):
             for l in range(data['SkinLevels'].__len__()):
@@ -144,10 +147,16 @@ def fetchStore(userdata):
     except:
         pass
 
+    for j in nskins:
+        for i in dailyprice['Offers']:
+            if i['OfferID'] == j:
+                nprices.append(list(i['Cost'].values())[0])
+
     # get the asset pack
     r = requests.get(f'https://valorant-api.com/v1/weapons', headers=authdata['headers'])
     assets = r.json()
 
+    # get skin images
     fskinimages = []
     nskinimages = []
     bskinimages = []
@@ -279,6 +288,6 @@ def pastmmr(userdata,szn):
             mmrdata['rank'] = ranks['tierName']
         if mmrdata['sznrank'] == ranks['tier']:
             mmrdata['sznrank'] = ranks['tierName']
-    print()
+
     return mmrdata
 
