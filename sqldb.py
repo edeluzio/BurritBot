@@ -25,13 +25,7 @@ import val
 def delDB(user,valname):
     conn = sqlite3.connect('db/user.db')
     curs = conn.cursor()
-    username = user
-
-    curs.execute("SELECT * FROM users WHERE username=:username AND valname=:valname" , {'username': username, 'valname': valname,})
-    check = curs.fetchall()
-    curs.execute("DELETE FROM users WHERE username=:username AND valname=:valname" , {'username': username, 'valname': valname,})
-    curs.execute("SELECT * FROM users WHERE username=:username AND valname=:valname" , {'username': username, 'valname': valname,})
-    # check = curs.fetchall()
+    curs.execute("DELETE FROM users WHERE username=:username AND valname=:valname" , {'username': user, 'valname': valname,})
     conn.commit()
     conn.close()
 
@@ -72,7 +66,7 @@ def checkDB(data):
     valname = data['valname']
 
     # check if in db
-    curs.execute("SELECT * FROM users WHERE valname=:valname", {'valname': valname})
+    curs.execute("SELECT * FROM users WHERE valname=:valname COLLATE NOCASE", {'valname': valname})
     check = curs.fetchall()
 
     if check.__len__() == 0:
@@ -113,7 +107,7 @@ def getDB(data):
 
     # get data and return in dictionary
     valname = data['valname']
-    check = curs.execute("SELECT * FROM users WHERE valname=:valname", {'valname': valname})
+    check = curs.execute("SELECT * FROM users WHERE valname=:valname COLLATE NOCASE", {'valname': valname})
     check = curs.fetchall()
     headers = {
         'X-Riot-Entitlements-JWT': check[0][3],
