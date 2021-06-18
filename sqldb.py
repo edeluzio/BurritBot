@@ -21,6 +21,21 @@ import val
 # pw = 'password1'
 #
 
+
+def delDB(user,valname):
+    conn = sqlite3.connect('db/user.db')
+    curs = conn.cursor()
+    username = user
+
+    curs.execute("SELECT * FROM users WHERE username=:username AND valname=:valname" , {'username': username, 'valname': valname,})
+    check = curs.fetchall()
+    curs.execute("DELETE FROM users WHERE username=:username AND valname=:valname" , {'username': username, 'valname': valname,})
+    curs.execute("SELECT * FROM users WHERE username=:username AND valname=:valname" , {'username': username, 'valname': valname,})
+    # check = curs.fetchall()
+    conn.commit()
+    conn.close()
+
+
 def dbinit():
     conn = sqlite3.connect('db/user.db')
     curs = conn.cursor()
