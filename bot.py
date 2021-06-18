@@ -427,7 +427,7 @@ async def shop(ctx):
     valname = re.sub(r'(^.shop)', '', message).lstrip()
 
     if not (sqldb.checkDB({'valname': valname})):
-        embed = discord.Embed(title=(valname + " is not registered in the database"))
+        embed = discord.Embed(title=(valname.capitalize() + " is not registered in the database"))
         await channel.send(embed=embed)
 
     else:
@@ -454,7 +454,7 @@ async def shop(ctx):
                 bskins = bskins + names + '\t\t ---- ' + str(vshop['bon']['prices'][index]) + ' VP' + '\n'
                 index = index + 1
         # send message back
-        embed = discord.Embed(title=(valname + "'s Valorant Store"))
+        embed = discord.Embed(title=(valname.capitalize() + "'s Valorant Store"))
         embed.add_field(name='Featured Shop', value=fskins, inline=False)
         embed.add_field(name='Regular Shop', value=nskins, inline=False)
         embed.add_field(name='Night Shop', value=bskins or "You currently have no Night Shop", inline=False)
@@ -470,7 +470,7 @@ async def rank(ctx):
     valname = re.sub(r'(^.rank)', '', message).lstrip()
 
     if not (sqldb.checkDB({'valname': valname})):
-        embed = discord.Embed(title=(valname + " is not registered in the database"))
+        embed = discord.Embed(title=(valname.capitalize()+ " is not registered in the database"))
         await channel.send(embed=embed)
     else:
         dbinfo = sqldb.getDB({'valname': valname})
@@ -482,7 +482,7 @@ async def rank(ctx):
         mmrperc = Decimal(mmrperc).quantize(dec)
         mmrperc = str(mmrperc) + '%'
 
-        embed = discord.Embed(title=(valname + "'s current Valorant Rank"))
+        embed = discord.Embed(title=(valname.capitalize() + "'s current Valorant Rank"))
         embed.add_field(name='Rank', value=mmrdata['rank'])
         embed.add_field(name='Elo in rank', value=mmrdata['elo'], inline=False)
         embed.add_field(name='Net elo from last game played', value=mmrdata['lastGame'])
