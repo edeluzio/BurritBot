@@ -227,7 +227,7 @@ def getLatestSzn():
     r=response.json()
     # for season in r["data"]:
     #     uuid = season["uuid"]
-    uuid = r["data"][8]["uuid"]
+    uuid = r["data"][10]["uuid"]
     return uuid
 
 def mmr(userdata):
