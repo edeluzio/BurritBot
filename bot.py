@@ -58,8 +58,11 @@ async def update(ctx):
     # get all messages from channel history and append each line to total messages list
     for msg in messages:
         lines = msg.content.splitlines()
-        for l in lines:
-            tmessages.append(l)
+        if (msg.content == '.update' and channel.name =='burrit-cinemas-ratings'):
+            await msg.delete()
+        else:
+            for l in lines:
+                tmessages.append(l)
 
     # iterate through each message, get the ranking, add to list of total rankings
     for tmsg in tmessages:
@@ -77,6 +80,7 @@ async def update(ctx):
             title = result.rstrip()
             ranks.append(match.groups()[1])
             # print(match1.groups())
+
 
         mov = [title, ranks]
         # print(mov)
