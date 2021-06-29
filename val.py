@@ -3,7 +3,8 @@ import json
 import aiohttp
 import re
 import requests
-
+from base64 import b64encode, b64decode
+import zlib
 
 def auth(username, password):
     session = requests.session()
@@ -291,3 +292,46 @@ def pastmmr(userdata,szn):
 
     return mmrdata
 
+def getXhair(userdata):
+
+    authdata = auth(userdata['username'], userdata['password'])
+    cvers = clientinfo(userdata)
+    authdata['headers'].update(cvers)
+
+    url = 'https://playerpreferences.riotgames.com/playerPref/v3/getPreference/Ares.PlayerSettings'
+    r = requests.get(url, headers=authdata['headers'])
+    settings = r.json()
+    settings = inflate_decode(settings['data'])
+    settings = json.loads(settings)
+
+    xhair = {}
+
+    # get sens
+    xhair['sens'] = str(round(settings['floatSettings'][0]['value'], 2))
+
+    # get inner
+    inner = {}
+    inner['thickness'] = str(settings['floatSettings'][3]['value'])
+    inner['length'] = str(settings['floatSettings'][4]['value'])
+    inner['offset'] = str(settings['floatSettings'][5]['value'])
+    inner['opacity'] = str(settings['floatSettings'][6]['value'])
+    xhair['inner'] = inner
+
+    # get outer
+    outer = {}
+    outer['thickness'] = str(settings['floatSettings'][7]['value'])
+    outer['length'] = str(settings['floatSettings'][8]['value'])
+    outer['offset'] = str(settings['floatSettings'][9]['value'])
+    outer['opacity'] = str(settings['floatSettings'][10]['value'])
+    xhair['outer'] = outer
+
+    # get other
+    # colourog = settings['stringSettings'][2]['value']
+    # colour = re.sub(r'[a-zA-z=()]', r'', colourog)
+    # colour = colour.split(',')
+    # xhair['colour'] = colour
+
+    return xhair
+
+def inflate_decode(string: str):
+    return zlib.decompress(b64decode(string), -zlib.MAX_WBITS).decode('UTF-8')

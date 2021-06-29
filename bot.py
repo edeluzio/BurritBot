@@ -573,5 +573,33 @@ async def users(ctx):
     embed.add_field(name='Database ID', value=sqldb.getAll())
     await channel.send(embed=embed)
 
+@client.command()
+async def crosshair(ctx):
+
+    author = ctx.author
+    channel = ctx.channel
+    message = ctx.message.content
+    valname = re.sub(r'(^.crosshair)', '', message).lstrip()
+
+    if not (sqldb.checkDB({'valname': valname})):
+        embed = discord.Embed(title=(valname.capitalize()+ " is not registered in the database"))
+        await channel.send(embed=embed)
+        return
+    else:
+        dbinfo = sqldb.getDB({'valname': valname})
+        xhair = val.getXhair(dbinfo)
+        # clr = xhair['colour']
+        # xcolour = discord.colour.Color.from_rgb(int(clr[0]), int(clr[1]), int(clr[2]))
+
+        inner = "Thickness:" + xhair['inner']['thickness'] + '\n' + "Length:" + xhair['inner']['length'] + '\n' + "Offset:" + xhair['inner']['offset'] + '\n' + "Opacity:" + xhair['inner']['opacity'] + '\n'
+        outer = "Thickness:" + xhair['outer']['thickness'] + '\n' + "Length:" + xhair['outer']['length'] + '\n' + "Offset:" + xhair['outer']['offset'] + '\n' + "Opacity:" + xhair['outer']['opacity'] + '\n'
+
+        embed = discord.Embed(title=(valname.capitalize() + "'s Crosshair"))
+        # embed.add_field(name='Additional info', value='<---- Crosshair color\n\n', inline=False)
+        embed.add_field(name='Inner Lines', value=inner, inline=False)
+        embed.add_field(name='Outer Lines', value=outer, inline=False)
+        embed.add_field(name='Mouse Sensitivity', value=xhair['sens'], inline=False)
+        await channel.send(embed=embed)
+
 
 client.run('ODM4MTAzNjY5MzcwNjUwNzE1.YI2O3Q.Tuq8ZqrLshUVxyw0Qc2p6_nu-A4')
