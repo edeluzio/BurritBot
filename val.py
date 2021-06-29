@@ -307,7 +307,7 @@ def getXhair(userdata):
     xhair = {}
 
     # get sens
-    xhair['sens'] = str(round(settings['floatSettings'][0]['value'], 2))
+    xhair['sens'] = str(round(settings['floatSettings'][0]['value'], 3))
 
     # get inner
     inner = {}
