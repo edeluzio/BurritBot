@@ -588,18 +588,30 @@ async def crosshair(ctx):
     else:
         dbinfo = sqldb.getDB({'valname': valname})
         xhair = val.getXhair(dbinfo)
-        # clr = xhair['colour']
-        # xcolour = discord.colour.Color.from_rgb(int(clr[0]), int(clr[1]), int(clr[2]))
+        clr = xhair['color']
+        xcolour = discord.colour.Color.from_rgb(clr['r'], clr['g'], clr['b'])
 
         inner = "Thickness:" + xhair['inner']['thickness'] + '\n' + "Length:" + xhair['inner']['length'] + '\n' + "Offset:" + xhair['inner']['offset'] + '\n' + "Opacity:" + xhair['inner']['opacity'] + '\n'
         outer = "Thickness:" + xhair['outer']['thickness'] + '\n' + "Length:" + xhair['outer']['length'] + '\n' + "Offset:" + xhair['outer']['offset'] + '\n' + "Opacity:" + xhair['outer']['opacity'] + '\n'
 
-        embed = discord.Embed(title=(valname.capitalize() + "'s Crosshair"))
-        # embed.add_field(name='Additional info', value='<---- Crosshair color\n\n', inline=False)
+        embed = discord.Embed(title=(valname.capitalize() + "'s Crosshair"), color=xcolour)
+        embed.add_field(name='Additional info', value='<---- Crosshair color\n\n', inline=False)
         embed.add_field(name='Inner Lines', value=inner, inline=False)
         embed.add_field(name='Outer Lines', value=outer, inline=False)
         embed.add_field(name='Mouse Sensitivity', value=xhair['sens'], inline=False)
         await channel.send(embed=embed)
+
+@client.command()
+async def hours(ctx):
+    author = ctx.author
+    channel = ctx.channel
+    message = ctx.message.content
+    store = re.sub(r'(^.hours)', '', message).lstrip()
+    store = store.replace(' ', '+')
+
+    url = 'https://www.google.com/search?q=' + store
+    r = requests.get(url)
+    print()
 
 
 client.run('ODM4MTAzNjY5MzcwNjUwNzE1.YI2O3Q.Tuq8ZqrLshUVxyw0Qc2p6_nu-A4')

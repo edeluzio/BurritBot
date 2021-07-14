@@ -292,18 +292,42 @@ def pastmmr(userdata,szn):
 
     return mmrdata
 
-def getXhair(userdata):
+def getXhairNorm(settings):
+    EA = 'EAresStringSettingName::'
+    for index in settings['stringSettings']:
+        if (index['settingEnum'] == EA + "CrosshairSettings"):
+            settingsXhair = json.loads(index['value'])
 
-    authdata = auth(userdata['username'], userdata['password'])
-    cvers = clientinfo(userdata)
-    authdata['headers'].update(cvers)
+    xhair = {}
 
-    url = 'https://playerpreferences.riotgames.com/playerPref/v3/getPreference/Ares.PlayerSettings'
-    r = requests.get(url, headers=authdata['headers'])
-    settings = r.json()
-    settings = inflate_decode(settings['data'])
-    settings = json.loads(settings)
+    EA = 'EAresFloatSettingName::'
+    # get sens
+    for index in settings['floatSettings']:
+        if (index['settingEnum'] == EA + "MouseSensitivity"):
+            xhair['sens'] = round(index['value'], 3)
 
+    # get color
+    xhair['color'] = settingsXhair['color']
+
+    # get inner
+    inner = {}
+    inner['thickness'] = str(settingsXhair['innerLines']['lineThickness'])
+    inner['length'] = str(settingsXhair['innerLines']['lineLength'])
+    inner['offset'] = str(settingsXhair['innerLines']['lineOffset'])
+    inner['opacity'] = str(settingsXhair['innerLines']['opacity'])
+    xhair['inner'] = inner
+
+    # get outer
+    outer = {}
+    outer['thickness'] = str(settingsXhair['outerLines']['lineThickness'])
+    outer['length'] = str(settingsXhair['outerLines']['lineLength'])
+    outer['offset'] = str(settingsXhair['outerLines']['lineOffset'])
+    outer['opacity'] = str(settingsXhair['outerLines']['opacity'])
+    xhair['outer'] = outer
+
+    return xhair
+
+def getXhairSpec(settings):
     xhair = {}
 
     # get sens
@@ -325,13 +349,43 @@ def getXhair(userdata):
     outer['opacity'] = str(settings['floatSettings'][10]['value'])
     xhair['outer'] = outer
 
-    # get other
-    # colourog = settings['stringSettings'][2]['value']
-    # colour = re.sub(r'[a-zA-z=()]', r'', colourog)
-    # colour = colour.split(',')
-    # xhair['colour'] = colour
+    # get color
+    colorog = settings['stringSettings'][2]['value']
+    colorog = re.sub(r'[a-zA-z=()]', r'', colorog)
+    colorog = colorog.split(',')
+    print()
+    color = {}
+    color['r'] = int(colorog[0])
+    color['g'] = int(colorog[1])
+    color['b'] = int(colorog[2])
+    xhair['color'] = color
 
     return xhair
+
+def getXhair(userdata):
+
+    authdata = auth(userdata['username'], userdata['password'])
+    cvers = clientinfo(userdata)
+    authdata['headers'].update(cvers)
+
+    url = 'https://playerpreferences.riotgames.com/playerPref/v3/getPreference/Ares.PlayerSettings'
+    r = requests.get(url, headers=authdata['headers'])
+    settings = r.json()
+    settings = inflate_decode(settings['data'])
+    settings = json.loads(settings)
+
+    specFlag = True
+    for index in settings['stringSettings']:
+        if (index['settingEnum'] == 'EAresStringSettingName::CrosshairSettings'):
+            specFlag = False
+
+    if (specFlag == True):
+        return getXhairSpec(settings)
+    else:
+        return getXhairNorm(settings)
+
+
+
 
 def inflate_decode(string: str):
     return zlib.decompress(b64decode(string), -zlib.MAX_WBITS).decode('UTF-8')
