@@ -620,6 +620,11 @@ async def smurfing(ctx):
     channel = ctx.channel
     message = ctx.message.content
     valnames = re.sub(r'(^.smurfing)', '', message).lstrip()
+    if(valnames.find(',') == -1):
+        embed = discord.Embed(title=("Please use the following format (include comma): .smurfing fromUser, toUser"))
+        await channel.send(embed=embed)
+        return
+
     valnames = valnames.split(',')
     getUser = valnames[0].lstrip()
     setUser = valnames[1].lstrip()
