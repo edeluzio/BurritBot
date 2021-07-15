@@ -621,7 +621,7 @@ async def smurfing(ctx):
     message = ctx.message.content
     valnames = re.sub(r'(^.smurfing)', '', message).lstrip()
     if(valnames.find(',') == -1):
-        embed = discord.Embed(title=("Please use the following format (include comma): .smurfing fromUser, toUser"))
+        embed = discord.Embed(title=("Please use the following format (include comma):\n .smurfing fromUser, toUser"))
         await channel.send(embed=embed)
         return
 
@@ -642,7 +642,7 @@ async def smurfing(ctx):
         dataGetUser = sqldb.getDB({'valname': getUser})
         dataSetUser = sqldb.getDB({'valname': setUser})
         val.transferSettings(dataGetUser,dataSetUser)
-        embed = discord.Embed(title=(getUser.capitalize() + "'s settings have been transfered to " + setUser.capitalize()) + "'s account. Happy Smurfing :)")
+        embed = discord.Embed(title=(getUser.capitalize() + "'s settings have been transfered to " + setUser.capitalize()) + "'s account.\n Happy Smurfing :)")
         await channel.send(embed=embed)
         return
 
