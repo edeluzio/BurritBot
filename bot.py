@@ -613,5 +613,33 @@ async def hours(ctx):
     r = requests.get(url)
     print()
 
+@client.command()
+async def smurfing(ctx):
+
+    author = ctx.author
+    channel = ctx.channel
+    message = ctx.message.content
+    valnames = re.sub(r'(^.smurfing)', '', message).lstrip()
+    valnames = valnames.split(' ')
+    getUser = valnames[0]
+    setUser = valnames[1]
+
+    if not (sqldb.checkDB({'valname': getUser})):
+        embed = discord.Embed(title=(getUser.capitalize()+ " is not registered in the database"))
+        await channel.send(embed=embed)
+        return
+
+    if not (sqldb.checkDB({'valname': setUser})):
+        embed = discord.Embed(title=(setUser.capitalize()+ " is not registered in the database"))
+        await channel.send(embed=embed)
+        return
+    else:
+        dataGetUser = sqldb.getDB({'valname': getUser})
+        dataSetUser = sqldb.getDB({'valname': setUser})
+        val.transferSettings(dataGetUser,dataSetUser)
+        embed = discord.Embed(title=(getUser.capitalize() + "'s settings have been transfered to " + setUser.capitalize()) + "'s account. Happy Smurfing :)")
+        await channel.send(embed=embed)
+        return
+
 
 client.run('ODM4MTAzNjY5MzcwNjUwNzE1.YI2O3Q.Tuq8ZqrLshUVxyw0Qc2p6_nu-A4')

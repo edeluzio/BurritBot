@@ -5,6 +5,9 @@ import re
 import requests
 from base64 import b64encode, b64decode
 import zlib
+from codecs import encode
+from functools import reduce
+
 
 def auth(username, password):
     session = requests.session()
@@ -353,7 +356,6 @@ def getXhairSpec(settings):
     colorog = settings['stringSettings'][2]['value']
     colorog = re.sub(r'[a-zA-z=()]', r'', colorog)
     colorog = colorog.split(',')
-    print()
     color = {}
     color['r'] = int(colorog[0])
     color['g'] = int(colorog[1])
@@ -384,8 +386,79 @@ def getXhair(userdata):
     else:
         return getXhairNorm(settings)
 
+def transferSettings(dataGetUser,dataSetUser):
+    settings = getSettings(dataGetUser)
+    putSettings(dataSetUser, settings)
 
+
+def getSettings(userdata):
+
+    authdata = auth(userdata['username'], userdata['password'])
+    cvers = clientinfo(userdata)
+    authdata['headers'].update(cvers)
+    headers = authdata['headers']
+
+    url = 'https://playerpreferences.riotgames.com/playerPref/v3/getPreference/Ares.PlayerSettings'
+    r = requests.get(url, headers=headers)
+    response = r.json()
+    return response
+
+def putSettings(userdata, settings):
+
+    authdata = auth(userdata['username'], userdata['password'])
+    cvers = clientinfo(userdata)
+    authdata['headers'].update(cvers)
+    headers = authdata['headers']
+
+    url = 'https://playerpreferences.riotgames.com/playerPref/v3/savePreference'
+    r = requests.put(url,json=settings, headers=headers)
+    print()
 
 
 def inflate_decode(string: str):
     return zlib.decompress(b64decode(string), -zlib.MAX_WBITS).decode('UTF-8')
+
+def inflate_encode (string: str):
+    # b64 encoded deflated full settings
+    data = b64encode(string)
+    string = string.encode()
+    compress = zlib.compressobj()
+    data1 = compress.compress(data)
+    return data
+
+def deflate(string: bytes, compress_level: int = 9):
+    compress = zlib.compressobj(
+            compress_level,       # level: 0-9
+            zlib.DEFLATED,        # method: must be DEFLATED
+            -zlib.MAX_WBITS,      # window size in bits:
+                                  #   -15..-8: negate, suppress header
+                                  #   8..15: normal
+                                  #   16..30: subtract 16, gzip header
+            zlib.DEF_MEM_LEVEL,   # mem level: 1..8/9
+            0                     # strategy:
+                                  #   0 = Z_DEFAULT_STRATEGY
+                                  #   1 = Z_FILTERED
+                                  #   2 = Z_HUFFMAN_ONLY
+                                  #   3 = Z_RLE
+                                  #   4 = Z_FIXED
+    )
+    deflated = compress.compress(string)
+    deflated += compress.flush()
+    return deflated
+
+
+def inflate(string: bytes):
+    decompress = zlib.decompressobj(
+        -zlib.MAX_WBITS  # see above
+    )
+    inflated = decompress.decompress(string)
+    inflated += decompress.flush()
+    return inflated
+
+
+def decode_base64_and_inflate(string: str):
+    return inflate(b64decode(string)).decode('UTF-8')
+
+
+def deflate_and_base64_encode(string: str):
+    return b64encode(deflate(string.encode())).decode('UTF-8')
