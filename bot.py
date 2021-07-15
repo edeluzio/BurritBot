@@ -620,9 +620,9 @@ async def smurfing(ctx):
     channel = ctx.channel
     message = ctx.message.content
     valnames = re.sub(r'(^.smurfing)', '', message).lstrip()
-    valnames = valnames.split(' ')
-    getUser = valnames[0]
-    setUser = valnames[1]
+    valnames = valnames.split(',')
+    getUser = valnames[0].lstrip()
+    setUser = valnames[1].lstrip()
 
     if not (sqldb.checkDB({'valname': getUser})):
         embed = discord.Embed(title=(getUser.capitalize()+ " is not registered in the database"))
