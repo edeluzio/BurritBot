@@ -660,9 +660,8 @@ async def matchRanks(ctx):
         return
     else:
         dbinfo = sqldb.getDB({'valname': valname})
-        try:
-            match = val.getMatch(dbinfo)
-        except:
+        match = val.getMatch(dbinfo)
+        if (match == False):
             embed = discord.Embed(title=(valname.capitalize()+ " is not currently in a match"))
             await channel.send(embed=embed)
             return
@@ -682,8 +681,5 @@ async def matchRanks(ctx):
         embed.add_field(name='Team 1', value=team1, inline=False)
         embed.add_field(name='Team 2', value=team2, inline=False)
         await channel.send(embed=embed)
-
-        print()
-
 
 client.run('ODM4MTAzNjY5MzcwNjUwNzE1.YI2O3Q.Tuq8ZqrLshUVxyw0Qc2p6_nu-A4')
