@@ -620,6 +620,7 @@ async def smurfing(ctx):
     channel = ctx.channel
     message = ctx.message.content
     valnames = re.sub(r'(^.smurfing)', '', message).lstrip()
+    test = valnames.find(',')
     if(valnames.find(',') == -1):
         embed = discord.Embed(title=("Please use the following format (include comma):\n .smurfing fromUser, toUser"))
         await channel.send(embed=embed)
@@ -645,6 +646,44 @@ async def smurfing(ctx):
         embed = discord.Embed(title=(getUser.capitalize() + "'s settings have been transfered to " + setUser.capitalize()) + "'s account.\n Happy Smurfing :)")
         await channel.send(embed=embed)
         return
+
+@client.command()
+async def matchRanks(ctx):
+    author = ctx.author
+    channel = ctx.channel
+    message = ctx.message.content
+    valname = re.sub(r'(^.matchRanks)', '', message).lstrip()
+
+    if not (sqldb.checkDB({'valname': valname})):
+        embed = discord.Embed(title=(valname.capitalize()+ " is not registered in the database"))
+        await channel.send(embed=embed)
+        return
+    else:
+        dbinfo = sqldb.getDB({'valname': valname})
+        try:
+            match = val.getMatch(dbinfo)
+        except:
+            embed = discord.Embed(title=(valname.capitalize()+ " is not currently in a match"))
+            await channel.send(embed=embed)
+            return
+
+        users = val.getUsersInMatch(dbinfo,match)
+        agentRanks = val.getAgentRanksInMatch(dbinfo,users)
+
+        team1 = ''
+        for player in agentRanks['Team1']:
+            team1 = team1 + player + ': ' + agentRanks['Team1'].get(player).capitalize() + '\n'
+
+        team2 = ''
+        for player in agentRanks['Team2']:
+            team2 = team2 + player + ': ' + agentRanks['Team2'].get(player).capitalize()  + '\n'
+
+        embed = discord.Embed(title=("Rank list of players in " + valname.capitalize() + "'s current match"))
+        embed.add_field(name='Team 1', value=team1, inline=False)
+        embed.add_field(name='Team 2', value=team2, inline=False)
+        await channel.send(embed=embed)
+
+        print()
 
 
 client.run('ODM4MTAzNjY5MzcwNjUwNzE1.YI2O3Q.Tuq8ZqrLshUVxyw0Qc2p6_nu-A4')

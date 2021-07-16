@@ -8,7 +8,7 @@ import zlib
 from codecs import encode
 from functools import reduce
 
-
+# auth stuff
 def auth(username, password):
     session = requests.session()
     data = {
@@ -56,7 +56,6 @@ def auth(username, password):
     return authdata
     session.close()
 
-
 def clientinfo(userdata):
 
     authdata = auth(userdata['username'], userdata['password'])
@@ -79,6 +78,7 @@ def clientinfo(userdata):
     return client
 
 
+# val user stuff
 def fetchStore(userdata):
 
 
@@ -390,7 +390,6 @@ def transferSettings(dataGetUser,dataSetUser):
     settings = getSettings(dataGetUser)
     putSettings(dataSetUser, settings)
 
-
 def getSettings(userdata):
 
     authdata = auth(userdata['username'], userdata['password'])
@@ -414,7 +413,88 @@ def putSettings(userdata, settings):
     r = requests.put(url,json=settings, headers=headers)
     print()
 
+def getMatch(userdata):
+    authdata = auth(userdata['username'], userdata['password'])
+    cvers = clientinfo(userdata)
+    authdata['headers'].update(cvers)
+    url = 'https://glz-na-1.na.a.pvp.net/core-game/v1/players/' + authdata['user_id']
 
+    r = requests.get(url, headers=authdata['headers'])
+    match = r.json()
+
+    if not(r.status_code == 200):
+        return False
+
+    match = match['MatchID']
+    return match
+    print()
+
+def getUsersInMatch(userdata,matchID):
+    authdata = auth(userdata['username'], userdata['password'])
+    cvers = clientinfo(userdata)
+    authdata['headers'].update(cvers)
+    url = 'https://glz-na-1.na.a.pvp.net/core-game/v1/matches/' + matchID
+
+    r = requests.get(url, headers=authdata['headers'])
+    users = r.json()
+
+    if not(r.status_code == 200):
+        return False
+
+    users = users['Players']
+    return users
+
+def getAgentRanksInMatch(userdata,playerlist):
+    agents = getAgents(userdata)
+
+    ranklist = {}
+    team1 = {}
+    team2 = {}
+    for player in playerlist:
+        for agent in agents:
+            if (player['CharacterID'] == agent['ID'].lower()):
+                if(player['TeamID'] == 'Blue'):
+                    team1[agent['Name']] = player['SeasonalBadgeInfo']['Rank']
+                else:
+                    team2[agent['Name']] = player['SeasonalBadgeInfo']['Rank']
+
+
+
+    # update to string ranks
+    r = requests.get('https://valorant-api.com/v1/competitivetiers')
+    tiers = r.json()
+
+    for ranks in tiers['data'][1]['tiers']:
+        for intRank in team1:
+            if team1.get(intRank) == ranks['tier']:
+                temp = {intRank: ranks['tierName']}
+                team1.update(temp)
+
+    for ranks in tiers['data'][1]['tiers']:
+        for intRank in team2:
+            if team2.get(intRank) == ranks['tier']:
+                temp = {intRank: ranks['tierName']}
+                team2.update(temp)
+
+    ranklist = {
+        'Team1': team1,
+        'Team2': team2,
+    }
+
+    return ranklist
+def getAgents(userdata):
+    authdata = auth(userdata['username'], userdata['password'])
+    cvers = clientinfo(userdata)
+    authdata['headers'].update(cvers)
+    url = 'https://shared.na.a.pvp.net/content-service/v2/content'
+
+    r = requests.get(url, headers=authdata['headers'])
+    charlist = r.json()
+    charlist = charlist['Characters']
+    return charlist
+
+
+# encode/decode stuff
 def inflate_decode(string: str):
     return zlib.decompress(b64decode(string), -zlib.MAX_WBITS).decode('UTF-8')
 
@@ -446,7 +526,6 @@ def deflate(string: bytes, compress_level: int = 9):
     deflated += compress.flush()
     return deflated
 
-
 def inflate(string: bytes):
     decompress = zlib.decompressobj(
         -zlib.MAX_WBITS  # see above
@@ -455,10 +534,11 @@ def inflate(string: bytes):
     inflated += decompress.flush()
     return inflated
 
-
 def decode_base64_and_inflate(string: str):
     return inflate(b64decode(string)).decode('UTF-8')
 
-
 def deflate_and_base64_encode(string: str):
     return b64encode(deflate(string.encode())).decode('UTF-8')
+
+
+
