@@ -77,7 +77,6 @@ def clientinfo(userdata):
               }
     return client
 
-
 # val user stuff
 def fetchStore(userdata):
 
@@ -298,11 +297,16 @@ def pastmmr(userdata,szn):
 def getXhairNorm(settings):
     EA = 'EAresStringSettingName::'
     for index in settings['stringSettings']:
-        if (index['settingEnum'] == EA + "CrosshairSettings"):
+        if (index['settingEnum'] == EA + "SavedCrosshairProfileData"):
             settingsXhair = json.loads(index['value'])
 
+
+    # get current crosshair profile
+    currProfIndex = settingsXhair['currentProfile']
+    currProf = settingsXhair['profiles'][currProfIndex]['primary']
     xhair = {}
 
+    # get mouse sens
     EA = 'EAresFloatSettingName::'
     # get sens
     for index in settings['floatSettings']:
@@ -310,22 +314,24 @@ def getXhairNorm(settings):
             xhair['sens'] = round(index['value'], 3)
 
     # get color
-    xhair['color'] = settingsXhair['color']
+    xhair['color'] = currProf['color']
 
     # get inner
     inner = {}
-    inner['thickness'] = str(settingsXhair['innerLines']['lineThickness'])
-    inner['length'] = str(settingsXhair['innerLines']['lineLength'])
-    inner['offset'] = str(settingsXhair['innerLines']['lineOffset'])
-    inner['opacity'] = str(settingsXhair['innerLines']['opacity'])
+    inner['thickness'] = str(currProf['innerLines']['lineThickness'])
+    inner['length'] = str(currProf['innerLines']['lineLength'])
+    inner['offset'] = str(currProf['innerLines']['lineOffset'])
+    inner['opacity'] = str(currProf['innerLines']['opacity'])
+    inner['showLines'] = 'Show Lines = ' + str(currProf['innerLines']['bShowLines'])
     xhair['inner'] = inner
 
     # get outer
     outer = {}
-    outer['thickness'] = str(settingsXhair['outerLines']['lineThickness'])
-    outer['length'] = str(settingsXhair['outerLines']['lineLength'])
-    outer['offset'] = str(settingsXhair['outerLines']['lineOffset'])
-    outer['opacity'] = str(settingsXhair['outerLines']['opacity'])
+    outer['thickness'] = str(currProf['outerLines']['lineThickness'])
+    outer['length'] = str(currProf['outerLines']['lineLength'])
+    outer['offset'] = str(currProf['outerLines']['lineOffset'])
+    outer['opacity'] = str(currProf['outerLines']['opacity'])
+    outer['showLines'] = 'Show Lines = ' + str(currProf['outerLines']['bShowLines'])
     xhair['outer'] = outer
 
     return xhair
@@ -376,15 +382,16 @@ def getXhair(userdata):
     settings = inflate_decode(settings['data'])
     settings = json.loads(settings)
 
-    specFlag = True
-    for index in settings['stringSettings']:
-        if (index['settingEnum'] == 'EAresStringSettingName::CrosshairSettings'):
-            specFlag = False
-
-    if (specFlag == True):
-        return getXhairSpec(settings)
-    else:
-        return getXhairNorm(settings)
+    print()
+    # specFlag = True
+    # for index in settings['stringSettings']:
+    #     if (index['settingEnum'] == 'EAresStringSettingName::CrosshairSettings'):
+    #         specFlag = False
+    #
+    # if (specFlag == True):
+    #     return getXhairSpec(settings)
+    # else:
+    return getXhairNorm(settings)
 
 def transferSettings(dataGetUser,dataSetUser):
     settings = getSettings(dataGetUser)
@@ -411,7 +418,6 @@ def putSettings(userdata, settings):
 
     url = 'https://playerpreferences.riotgames.com/playerPref/v3/savePreference'
     r = requests.put(url,json=settings, headers=headers)
-    print()
 
 def getMatch(userdata):
     authdata = auth(userdata['username'], userdata['password'])
@@ -427,7 +433,6 @@ def getMatch(userdata):
 
     match = match['MatchID']
     return match
-    print()
 
 def getUsersInMatch(userdata,matchID):
     authdata = auth(userdata['username'], userdata['password'])
@@ -482,6 +487,7 @@ def getAgentRanksInMatch(userdata,playerlist):
     }
 
     return ranklist
+
 def getAgents(userdata):
     authdata = auth(userdata['username'], userdata['password'])
     cvers = clientinfo(userdata)
@@ -493,6 +499,47 @@ def getAgents(userdata):
     charlist = charlist['Characters']
     return charlist
 
+def getPlayerLoadout(userdata):
+
+    authdata = auth(userdata['username'], userdata['password'])
+    cvers = clientinfo(userdata)
+    authdata['headers'].update(cvers)
+    url = 'https://pd.NA.a.pvp.net/personalization/v2/players/' + authdata['user_id'] + '/playerloadout'
+
+    r = requests.get(url, headers=authdata['headers'])
+    player = r.json()
+    return player
+
+def getPlayerWeapons(userdata):
+
+    authdata = auth(userdata['username'], userdata['password'])
+    cvers = clientinfo(userdata)
+    authdata['headers'].update(cvers)
+
+    url = 'https://pd.NA.a.pvp.net/store/v1/entitlements/' + authdata['user_id'] + '/e7c63390-eda7-46e0-bb7a-a6abdacd2433'
+    r = requests.get(url, headers=authdata['headers'])
+    playerSkinLevels = r.json()
+    playerSkinLevels = playerSkinLevels['Entitlements']
+
+    url = 'https://pd.NA.a.pvp.net/store/v1/entitlements/' + authdata['user_id'] + '/3ad1b2b2-acdb-4524-852f-954a76ddae0a'
+    r = requests.get(url, headers=authdata['headers'])
+    playerSkinChromas = r.json()
+    playerSkinChromas = playerSkinChromas['Entitlements']
+
+    return {
+        'playerSkinChromas': playerSkinChromas,
+        'playerSkinLevels': playerSkinLevels
+            }
+
+def getContentWeapons(userdata):
+
+    authdata = auth(userdata['username'], userdata['password'])
+    cvers = clientinfo(userdata)
+    authdata['headers'].update(cvers)
+    r = requests.get(f'https://shared.na.a.pvp.net/content-service/v2/content', headers=authdata['headers'])
+    weapons = r.json()
+    weapons = weapons['SkinLevels']
+    return weapons
 
 # encode/decode stuff
 def inflate_decode(string: str):
@@ -539,6 +586,4 @@ def decode_base64_and_inflate(string: str):
 
 def deflate_and_base64_encode(string: str):
     return b64encode(deflate(string.encode())).decode('UTF-8')
-
-
 

@@ -271,104 +271,6 @@ async def burhelp(ctx):
 
 
 @client.command()
-async def peaklist(ctx):
-    try:
-        file = open('texts/peaks.txt', 'r')
-    except:
-        file = open('texts/peaks.txt', 'w')
-
-    l = file.read().split('\n')
-
-    channel = ctx.channel
-    peaks = ''
-    for person in l:
-        if not (person == ' '):
-            peaks = peaks + person + '\n'
-
-    embed = discord.Embed(title=("Current Overpeakers:"))
-    embed.add_field(name='________________________', value=str(peaks))
-    await channel.send(embed=embed)
-
-
-@client.command()
-async def peak(ctx):
-    channel = ctx.channel
-    message = ctx.message
-    message = message.content
-    user = re.sub(r'(^.peak)', '', message).lstrip()
-
-    try:
-        file = open('texts/peaks.txt', 'r')
-    except:
-        file = open('texts/peaks.txt', 'w')
-
-    l = file.read().split('\n')
-
-    matching = [s for s in l if (user + ':') in s]
-
-    if matching.__len__() == 0:
-        peaks = ''
-        for person in l:
-            if not (person == ' '):
-                peaks = peaks + person + '\n'
-
-        embed = discord.Embed(title=(user + " is not currently in the overpeak system"))
-        embed.add_field(name='Current overpeakers:', value=str(peaks))
-        embed.add_field(name='To add to overpeaker list:', value=str("Type .addpeak (USER)"))
-        await channel.send(embed=embed)
-
-    else:
-        list2 = []
-        for person in l:
-            list2.append(person.split(" "))
-        for person in list2:
-            if person[0] == (user + ':'):
-                count = int(person[1]) + 1
-
-        search = user + ': ' + str(count - 1)
-        result = user + ': ' + str(count)
-
-        l.pop(l.index(search))
-        l.append(result)
-        l = sorted(l)
-
-        filewrite = ''
-        for person in l:
-            if not (person == ' '):
-                filewrite = filewrite + person + '\n'
-
-        file = open('texts/peaks.txt', 'w')
-        file.write(filewrite.lstrip())
-        embed = discord.Embed(title=(user + " overpeaked again"))
-        embed.add_field(name='What a fucking dumbass', value=("He's overpeaked " + str(count) + ' times'))
-        await channel.send(embed=embed)
-
-
-@client.command()
-async def addpeak(ctx):
-    channel = ctx.channel
-    message = ctx.message
-    message = message.content
-    user = re.sub(r'(^.addpeak)', '', message).lstrip()
-
-    file = open('texts/peaks.txt', 'r')
-
-    l = file.read().split('\n')
-
-    matching = [s for s in l if (user + ':') in s]
-
-    if not matching.__len__() == 0:
-        embed = discord.Embed(title=(user + " is already in the list of overpeakers"))
-        await channel.send(embed=embed)
-    else:
-        file = open('texts/peaks.txt', 'a')
-        file.write(user + ": " + str(0) + '\n')
-
-        embed = discord.Embed(title=(user + " has been added to the list of overpeakers"))
-        await channel.send(embed=embed)
-
-
-@client.command()
 async def valsignup(ctx):
     author = ctx.author
     channel = ctx.channel
@@ -429,6 +331,24 @@ async def shop(ctx):
     channel = ctx.channel
     message = ctx.message.content
     valname = re.sub(r'(^.shop)', '', message).lstrip()
+
+    # kross and mark check cuz he sucks
+    if (valname.lower() == "a1ex" or valname.lower() == 'empty'):
+
+        # countdown
+        count = 60
+        embed = discord.Embed(title=("Looks we got a nongamer here! Guess you're gonna have to wait on your shop bitch"))
+        embed.add_field(name='Timer', value=str(count))
+        mes = await channel.send(embed=embed)
+        count = count - 1
+        time.sleep(0.9)
+        for i in range(count, -1, -1):
+            embed2 = discord.Embed(title="Looks we got a nongamer here! Guess you're gonna have to wait on your shop bitch")
+            embed2.add_field(name='Timer', value=str(count))
+            count = count - 1
+            await mes.edit(embed=embed2)
+            time.sleep(0.9)
+        # await channel.send(embed=embed)
 
     if not (sqldb.checkDB({'valname': valname})):
         embed = discord.Embed(title=(valname.capitalize() + " is not registered in the database"))
@@ -591,8 +511,8 @@ async def crosshair(ctx):
         clr = xhair['color']
         xcolour = discord.colour.Color.from_rgb(clr['r'], clr['g'], clr['b'])
 
-        inner = "Thickness:" + xhair['inner']['thickness'] + '\n' + "Length:" + xhair['inner']['length'] + '\n' + "Offset:" + xhair['inner']['offset'] + '\n' + "Opacity:" + xhair['inner']['opacity'] + '\n'
-        outer = "Thickness:" + xhair['outer']['thickness'] + '\n' + "Length:" + xhair['outer']['length'] + '\n' + "Offset:" + xhair['outer']['offset'] + '\n' + "Opacity:" + xhair['outer']['opacity'] + '\n'
+        inner = "Thickness:" + xhair['inner']['thickness'] + '\n' + "Length:" + xhair['inner']['length'] + '\n' + "Offset:" + xhair['inner']['offset'] + '\n' + "Opacity:" + xhair['inner']['opacity'] + '\n' + xhair['inner']['showLines'] + '\n'
+        outer = "Thickness:" + xhair['outer']['thickness'] + '\n' + "Length:" + xhair['outer']['length'] + '\n' + "Offset:" + xhair['outer']['offset'] + '\n' + "Opacity:" + xhair['outer']['opacity'] + '\n'+ xhair['outer']['showLines'] + '\n'
 
         embed = discord.Embed(title=(valname.capitalize() + "'s Crosshair"), color=xcolour)
         embed.add_field(name='Additional info', value='<---- Crosshair color\n\n', inline=False)
@@ -601,17 +521,6 @@ async def crosshair(ctx):
         embed.add_field(name='Mouse Sensitivity', value=xhair['sens'], inline=False)
         await channel.send(embed=embed)
 
-@client.command()
-async def hours(ctx):
-    author = ctx.author
-    channel = ctx.channel
-    message = ctx.message.content
-    store = re.sub(r'(^.hours)', '', message).lstrip()
-    store = store.replace(' ', '+')
-
-    url = 'https://www.google.com/search?q=' + store
-    r = requests.get(url)
-    print()
 
 @client.command()
 async def smurfing(ctx):
