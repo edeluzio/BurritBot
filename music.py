@@ -10,11 +10,11 @@ FFMPEG_OPTS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_
 q1 = queue.Queue()
 
 
-async def checkQueue(voice):
+def checkQueue(voice):
     if (q1.qsize() > 0):
         voice.play(FFmpegPCMAudio(queue.get(), **FFMPEG_OPTS), after=checkQueue())
     else:
-        await voice.disconnect() 
+        return
 
 #Get videos from links or from youtube search
 def search(query, song):
