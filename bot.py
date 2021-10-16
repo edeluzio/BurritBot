@@ -1,26 +1,27 @@
 from decimal import Decimal
+from datetime import datetime
+from discord.ext import commands
+from bs4 import BeautifulSoup
+import requests
+import pytz
 import discord
 import re
-from datetime import datetime
-import pytz
-from discord.ext import commands
-import requests
-from bs4 import BeautifulSoup
 import json
 import random
 import time
 import sqldb
 import asyncio
 import val
+import music
 
-client = commands.Bot(command_prefix='.')
+intents = discord.Intents().all()
+client = commands.Bot(command_prefix='.', intents=intents)
 poll = []
 
 
 def check(author):
     def inner_check(message):
         return message.author == author
-
     return inner_check
 
 
@@ -590,5 +591,32 @@ async def matchRanks(ctx):
         embed.add_field(name='Team 1', value=team1, inline=False)
         embed.add_field(name='Team 2', value=team2, inline=False)
         await channel.send(embed=embed)
+
+
+@client.command()
+async def play(ctx, *, query):
+
+    author = ctx.author
+    channel = ctx.channel
+    message = ctx.message.content
+    song = re.sub(r'(^.play)', '', message).lstrip()
+
+
+
+    video, source = music.search(query, song)
+    voice = discord.utils.get(client.voice_clients, guild=ctx.guild)
+
+    print('adding to queue')
+    await music.add(ctx, voice, source, song)
+
+@client.command()
+async def skip(ctx):
+
+    author = ctx.author
+    channel = ctx.channel
+    message = ctx.message.content
+    voice = discord.utils.get(client.voice_clients, guild=ctx.guild)
+    music.skip(ctx, voice)
+
 
 client.run('ODM4MTAzNjY5MzcwNjUwNzE1.YI2O3Q.Tuq8ZqrLshUVxyw0Qc2p6_nu-A4')
