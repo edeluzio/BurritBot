@@ -607,7 +607,10 @@ async def play(ctx, *, query):
     voice = discord.utils.get(client.voice_clients, guild=ctx.guild)
 
     print('adding to queue')
-    await music.add(ctx, voice, source, song)
+    try:
+        await music.add(ctx, voice, source, song)
+    except Exception as e:
+        print('something went wrong in music player')
 
 @client.command()
 async def skip(ctx):
