@@ -13,6 +13,7 @@ import sqldb
 import asyncio
 import val
 import music
+import traceback
 
 intents = discord.Intents().all()
 client = commands.Bot(command_prefix='.', intents=intents)
@@ -595,22 +596,26 @@ async def matchRanks(ctx):
 
 @client.command()
 async def play(ctx, *, query):
+    # check to see if user in channel
+    textChannel = ctx.channel
+    try:
+        voiceChannel = ctx.author.voice.channel
+    except:
+        embed = discord.Embed(title=("You must be in a voice channel to play a song."))
+        await textChannel.send(embed=embed)
+        return
 
-    author = ctx.author
-    channel = ctx.channel
     message = ctx.message.content
     song = re.sub(r'(^.play)', '', message).lstrip()
-
-
-
     video, source = music.search(query, song)
     voice = discord.utils.get(client.voice_clients, guild=ctx.guild)
 
     print('adding to queue')
+    print()
     try:
-        await music.add(ctx, voice, source, song)
+        await music.add(ctx, voice, source, song, client)
     except Exception as e:
-        print('something went wrong in music player')
+         print(traceback.format_exc())
 
 @client.command()
 async def skip(ctx):
@@ -619,7 +624,15 @@ async def skip(ctx):
     channel = ctx.channel
     message = ctx.message.content
     voice = discord.utils.get(client.voice_clients, guild=ctx.guild)
-    music.skip(ctx, voice)
+    await music.skip(ctx, voice, client)
 
+@client.command()
+async def stop(ctx):
+
+    author = ctx.author
+    channel = ctx.channel
+    message = ctx.message.content
+    voice = discord.utils.get(client.voice_clients, guild=ctx.guild)
+    await music.stop(ctx, voice, client)
 
 client.run('ODM4MTAzNjY5MzcwNjUwNzE1.YI2O3Q.Tuq8ZqrLshUVxyw0Qc2p6_nu-A4')
