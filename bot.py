@@ -15,7 +15,6 @@ import val
 import music
 import traceback
 
-discord.opus.load_opus()
 intents = discord.Intents().all()
 client = commands.Bot(command_prefix='.', intents=intents)
 poll = []

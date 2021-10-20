@@ -20,13 +20,14 @@ def myAfter(client, voice):
 async def checkQueue(client, voice):
     print('queue size is ',  q1.qsize())
     if (q1.qsize() > 0):
-        voice.play(FFmpegPCMAudio(q1.get(), **FFMPEG_OPTS), after=lambda e: myAfter(client, voice))
+        source = await discord.FFmpegOpusAudio.from_probe(q1.get(), **FFMPEG_OPTS)
+        voice.play(source, after=lambda e: myAfter(client, voice))
     else:
         await voice.disconnect()
 
 #Get videos from links or from youtube search
 def search(query, song):
-    with YoutubeDL({'format': 'bestaudio', 'noplaylist':'True'}) as ydl:
+    with YoutubeDL({'format': 'bestaudio/best', 'noplaylist':'True'}) as ydl:
         try: requests.get(song)
         except: info = ydl.extract_info(f"ytsearch:{song}", download=False)['entries'][0]
         else: info = ydl.extract_info(song, download=False)
@@ -43,7 +44,7 @@ async def add(ctx, voice, source, song, client):
         await voice.move_to(channel)
         # if connected to channel but not playing anything
         if voice and not voice.is_playing():
-            voice.play(FFmpegPCMAudio(q1.get(), **FFMPEG_OPTS), after=lambda e: myAfter(client, voice))
+            # voice.play(FFmpegPCMAudio(q1.get(), **FFMPEG_OPTS), after=lambda e: myAfter(client, voice))
             embed = discord.Embed(title=("Now playing " + song))
             await textChannel.send(embed=embed)
         else:
@@ -52,8 +53,10 @@ async def add(ctx, voice, source, song, client):
     else:
         # otherwise join the channel the user is in
         voice = await channel.connect()
-        print('now playing ' + song)
-        voice.play(FFmpegPCMAudio(q1.get(), **FFMPEG_OPTS), after=lambda e: myAfter(client, voice))
+        source = await discord.FFmpegOpusAudio.from_probe(q1.get(), **FFMPEG_OPTS)
+        voice.play(source, after=lambda e: myAfter(client, voice))
+        print('first play')
+        # voice.play(FFmpegPCMAudio(q1.get(), **FFMPEG_OPTS), after=lambda e: myAfter(client, voice))
         embed = discord.Embed(title=("Now playing " + song))
         await textChannel.send(embed=embed)
         
@@ -61,7 +64,8 @@ async def add(ctx, voice, source, song, client):
 async def skip(ctx, voice, client):
     voice.stop()
     if q1.qsize() > 0:
-        voice.play(FFmpegPCMAudio(q1.get(), **FFMPEG_OPTS), after=lambda e: myAfter(client, voice))
+        source = await discord.FFmpegOpusAudio.from_probe(q1.get(), **FFMPEG_OPTS)
+        voice.play(source, after=lambda e: myAfter(client, voice))
     else:
         await voice.disconnect()
 
