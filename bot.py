@@ -236,7 +236,7 @@ async def votemov(ctx):
         index = index + 1
     movie = random.choice(tie)
     await channel.purge(limit=1)
-    win = discord.Embed(title='BurritCinemas is pleased to present to you:\n\n' + movie)
+    win = discord.Embed(description='BurritCinemas is pleased to present to you:\n\n' + movie)
     await channel.send(embed=win)
 
 
@@ -335,17 +335,17 @@ async def shop(ctx):
     valname = re.sub(r'(^.shop)', '', message).lstrip()
 
     # kross and mark check cuz he sucks
-    if (valname.lower() == "a1ex" or valname.lower() == 'empty'):
+    if (valname.lower() == 'empty'):
 
         # countdown
         count = 60
-        embed = discord.Embed(title=("Looks we got a nongamer here! Guess you're gonna have to wait on your shop bitch"))
+        embed = discord.Embed(description=("Looks we got a nongamer here! Guess you're gonna have to wait on your shop bitch"))
         embed.add_field(name='Timer', value=str(count))
         mes = await channel.send(embed=embed)
         count = count - 1
         time.sleep(0.9)
         for i in range(count, -1, -1):
-            embed2 = discord.Embed(title="Looks we got a nongamer here! Guess you're gonna have to wait on your shop bitch")
+            embed2 = discord.Embed(description="Looks we got a nongamer here! Guess you're gonna have to wait on your shop bitch")
             embed2.add_field(name='Timer', value=str(count))
             count = count - 1
             await mes.edit(embed=embed2)
@@ -353,7 +353,7 @@ async def shop(ctx):
         # await channel.send(embed=embed)
 
     if not (sqldb.checkDB({'valname': valname})):
-        embed = discord.Embed(title=(valname.capitalize() + " is not registered in the database"))
+        embed = discord.Embed(description=(valname.capitalize() + " is not registered in the database"))
         await channel.send(embed=embed)
 
     else:
@@ -396,17 +396,17 @@ async def rank(ctx):
     valname = re.sub(r'(^.rank)', '', message).lstrip()
 
     if not (sqldb.checkDB({'valname': valname})):
-        embed = discord.Embed(title=(valname.capitalize()+ " is not registered in the database"))
+        embed = discord.Embed(description=(valname.capitalize()+ " is not registered in the database"))
         await channel.send(embed=embed)
-        return;
+        return
     else:
         dbinfo = sqldb.getDB({'valname': valname})
         try:
             mmrdata = val.mmr(dbinfo)
         except:
-            embed = discord.Embed(title=(valname.capitalize()+ " has not played a competitive game this season"))
+            embed = discord.Embed(description=(valname.capitalize()+ " has not played a competitive game this season"))
             await channel.send(embed=embed)
-            return;
+            return
         dec = Decimal(10) ** -2
         mmrtotal = mmrdata['wins'] + mmrdata['losses']
         mmrperc = (mmrdata['wins'] / mmrtotal * 100)
@@ -442,7 +442,7 @@ async def pastrank(ctx):
     episode = 'EPISODE ' + episode[1]
 
     if act > 3 or act < 1:
-        embed = discord.Embed(title=( + "This is not a valid Act"))
+        embed = discord.Embed(description=( + "This is not a valid Act"))
         await channel.send(embed=embed)
         return
 
@@ -461,7 +461,7 @@ async def pastrank(ctx):
 
     else:
         if not (sqldb.checkDB({'valname': valname})):
-            embed = discord.Embed(title=(valname + " is not registered in the database"))
+            embed = discord.Embed(description=(valname + " is not registered in the database"))
             await channel.send(embed=embed)
             return
         else:
@@ -504,7 +504,7 @@ async def crosshair(ctx):
     valname = re.sub(r'(^.crosshair)', '', message).lstrip()
 
     if not (sqldb.checkDB({'valname': valname})):
-        embed = discord.Embed(title=(valname.capitalize()+ " is not registered in the database"))
+        embed = discord.Embed(description=(valname.capitalize()+ " is not registered in the database"))
         await channel.send(embed=embed)
         return
     else:
@@ -533,7 +533,7 @@ async def smurfing(ctx):
     valnames = re.sub(r'(^.smurfing)', '', message).lstrip()
     test = valnames.find(',')
     if(valnames.find(',') == -1):
-        embed = discord.Embed(title=("Please use the following format (include comma):\n .smurfing fromUser, toUser"))
+        embed = discord.Embed(description=("Please use the following format (include comma):\n .smurfing fromUser, toUser"))
         await channel.send(embed=embed)
         return
 
@@ -542,19 +542,19 @@ async def smurfing(ctx):
     setUser = valnames[1].lstrip()
 
     if not (sqldb.checkDB({'valname': getUser})):
-        embed = discord.Embed(title=(getUser.capitalize()+ " is not registered in the database"))
+        embed = discord.Embed(description=(getUser.capitalize()+ " is not registered in the database"))
         await channel.send(embed=embed)
         return
 
     if not (sqldb.checkDB({'valname': setUser})):
-        embed = discord.Embed(title=(setUser.capitalize()+ " is not registered in the database"))
+        embed = discord.Embed(description=(setUser.capitalize()+ " is not registered in the database"))
         await channel.send(embed=embed)
         return
     else:
         dataGetUser = sqldb.getDB({'valname': getUser})
         dataSetUser = sqldb.getDB({'valname': setUser})
         val.transferSettings(dataGetUser,dataSetUser)
-        embed = discord.Embed(title=(getUser.capitalize() + "'s settings have been transfered to " + setUser.capitalize()) + "'s account.\n Happy Smurfing :)")
+        embed = discord.Embed(description=(getUser.capitalize() + "'s settings have been transfered to " + setUser.capitalize()) + "'s account.\n Happy Smurfing :)")
         await channel.send(embed=embed)
         return
 
@@ -566,14 +566,14 @@ async def matchRanks(ctx):
     valname = re.sub(r'(^.matchRanks)', '', message).lstrip()
 
     if not (sqldb.checkDB({'valname': valname})):
-        embed = discord.Embed(title=(valname.capitalize()+ " is not registered in the database"))
+        embed = discord.Embed(description=(valname.capitalize()+ " is not registered in the database"))
         await channel.send(embed=embed)
         return
     else:
         dbinfo = sqldb.getDB({'valname': valname})
         match = val.getMatch(dbinfo)
         if (match == False):
-            embed = discord.Embed(title=(valname.capitalize()+ " is not currently in a match"))
+            embed = discord.Embed(description=(valname.capitalize()+ " is not currently in a match"))
             await channel.send(embed=embed)
             return
 
@@ -601,19 +601,20 @@ async def play(ctx, *, query):
     try:
         voiceChannel = ctx.author.voice.channel
     except:
-        embed = discord.Embed(title=("You must be in a voice channel to play a song."))
+        embed = discord.Embed(description=("You must be in a voice channel to play a song."))
         await textChannel.send(embed=embed)
         return
 
     message = ctx.message.content
     song = re.sub(r'(^.play)', '', message).lstrip()
     video, source = music.search(query, song)
+    url = video['webpage_url']
+    urltitle = video['title']
     voice = discord.utils.get(client.voice_clients, guild=ctx.guild)
 
     print('adding to queue')
-    print()
     try:
-        await music.add(ctx, voice, source, song, client)
+        await music.add(ctx, voice, source, song, client, url, urltitle)
     except Exception as e:
          print(traceback.format_exc())
 

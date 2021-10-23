@@ -34,7 +34,7 @@ def search(query, song):
     return (info, info['formats'][0]['url'])
 
 
-async def add(ctx, voice, source, song, client):
+async def add(ctx, voice, source, song, client, url, urltitle):
     channel = ctx.author.voice.channel
     textChannel = ctx.channel
     q1.put(source)
@@ -44,20 +44,24 @@ async def add(ctx, voice, source, song, client):
         await voice.move_to(channel)
         # if connected to channel but not playing anything
         if voice and not voice.is_playing():
+            source = await discord.FFmpegOpusAudio.from_probe(q1.get(), **FFMPEG_OPTS)  
+            voice.play(source, after=lambda e: myAfter(client, voice))
             # voice.play(FFmpegPCMAudio(q1.get(), **FFMPEG_OPTS), after=lambda e: myAfter(client, voice))
-            embed = discord.Embed(title=("Now playing " + song))
+            desc = "Now playing [" + urltitle + "](" + url + ") requested by " + ctx.author.mention
+            embed = discord.Embed(description=desc)
             await textChannel.send(embed=embed)
         else:
-            embed = discord.Embed(title=("Added " + song + " to the queue"))
+            desc = "Added [" + urltitle + "](" + url + ") to the queue requested by " + ctx.author.mention
+            embed = discord.Embed(description=desc)
             await textChannel.send(embed=embed)
     else:
         # otherwise join the channel the user is in
         voice = await channel.connect()
         source = await discord.FFmpegOpusAudio.from_probe(q1.get(), **FFMPEG_OPTS)
         voice.play(source, after=lambda e: myAfter(client, voice))
-        print('first play')
         # voice.play(FFmpegPCMAudio(q1.get(), **FFMPEG_OPTS), after=lambda e: myAfter(client, voice))
-        embed = discord.Embed(title=("Now playing " + song))
+        desc = "Now playing [" + urltitle + "](" + url + ") requested by " + ctx.author.mention
+        embed = discord.Embed(description=desc)
         await textChannel.send(embed=embed)
         
 
