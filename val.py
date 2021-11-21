@@ -91,7 +91,7 @@ def fetchStore(userdata):
     authdata['headers'].update(cvers)
 
     # Content Request
-    r = requests.get(f'https://shared.na.a.pvp.net/content-service/v2/content', headers=authdata['headers'])
+    r = requests.get(f'https://valorant-api.com/v1/weapons/skinchromas', headers=authdata['headers'])
     data = r.json()
 
     featuredlength = store['FeaturedBundle']['Bundle']['Items'].__len__()
@@ -117,25 +117,32 @@ def fetchStore(userdata):
     r = requests.get('https://pd.na.a.pvp.net/store/v1/offers/', headers=authdata['headers'])
     dailyprice = r.json()
 
+    # get the asset pack
+    r = requests.get(f'https://valorant-api.com/v1/weapons', headers=authdata['headers'])
+    assets = r.json()
+
     # get featured ids, prices and append
     for i in range(featuredlength):
         fskins.append(store['FeaturedBundle']['Bundle']['Items'][i]['Item']['ItemID'])
         if (int(store['FeaturedBundle']['Bundle']['Items'][i]['BasePrice']) > 700):
             fprices.append(store['FeaturedBundle']['Bundle']['Items'][i]['BasePrice'])
+
     # append weapon name to a list, will be used for captions of the images
-    for j in range(fskins.__len__()):
-        for l in range(data['SkinLevels'].__len__()):
-            if (fskins[j].lower() == data['SkinLevels'][l]['ID'].lower()):
-                fnames.append(data['SkinLevels'][l]['Name'])
+    for featSkin in range(fskins.__len__()):
+        for asset in range(assets['data'].__len__()):
+            for skin in range(assets['data'][asset]['skins'].__len__()):
+                if fskins[featSkin].lower() == assets['data'][asset]['skins'][skin]['levels'][0]['uuid'].lower():
+                    fnames.append(assets['data'][asset]['skins'][skin]['levels'][0]['displayName'])
 
     # get normal ids
     for k in range(normallength):
         nskins.append(store['SkinsPanelLayout']['SingleItemOffers'][k])
     # append weapon name to list
-    for j in range(nskins.__len__()):
-        for l in range(data['SkinLevels'].__len__()):
-            if nskins[j].lower() == data['SkinLevels'][l]['ID'].lower():
-                nnames.append(data['SkinLevels'][l]['Name'])
+    for normSkin in range(nskins.__len__()):
+        for asset in range(assets['data'].__len__()):
+            for skin in range(assets['data'][asset]['skins'].__len__()):
+                if nskins[normSkin].lower() == assets['data'][asset]['skins'][skin]['levels'][0]['uuid'].lower():
+                    nnames.append(assets['data'][asset]['skins'][skin]['levels'][0]['displayName'])
 
     # try to get bonus ids and print
     try:
@@ -143,10 +150,11 @@ def fetchStore(userdata):
             bskins.append(store['BonusStore']['BonusStoreOffers'][m]['Offer']['OfferID'])
             bprices.append(list(store['BonusStore']['BonusStoreOffers'][m]['DiscountCosts'].values())[0])
         # append weapon name to list
-        for j in range(bskins.__len__()):
-            for l in range(data['SkinLevels'].__len__()):
-                if (bskins[j].lower() == data['SkinLevels'][l]['ID'].lower()):
-                    bnames.append(data['SkinLevels'][l]['Name'])
+        for bonSkin in range(bskins.__len__()):
+            for asset in range(assets['data'].__len__()):
+                for skin in range(assets['data'][asset]['skins'].__len__()):
+                    if bskins[bonSkin].lower() == assets['data'][asset]['skins'][skin]['levels'][0]['uuid'].lower():
+                        bnames.append(assets['data'][asset]['skins'][skin]['levels'][0]['displayName'])
     except:
         pass
 
@@ -155,42 +163,38 @@ def fetchStore(userdata):
             if i['OfferID'] == j:
                 nprices.append(list(i['Cost'].values())[0])
 
-    # get the asset pack
-    r = requests.get(f'https://valorant-api.com/v1/weapons', headers=authdata['headers'])
-    assets = r.json()
-
-    # get skin images
-    fskinimages = []
-    nskinimages = []
-    bskinimages = []
-
-    # For each gun in skinlist
-    for a in range(fskins.__len__()):
-        # compare with each gun type
-        for b in range(assets['data'].__len__()):
-            # compare with each skin of that gun
-            for c in range(assets['data'][b]['skins'].__len__()):
-                # if the gun ids match, append the link to the list
-                if fskins[a].lower() == assets['data'][b]['skins'][c]['levels'][0]['uuid']:
-                    fskinimages.append(assets['data'][b]['skins'][c]['chromas'][0]['fullRender'])
-
-    for a in range(nskins.__len__()):
-        # compare with each gun type
-        for b in range(assets['data'].__len__()):
-            # compare with each skin of that gun
-            for c in range(assets['data'][b]['skins'].__len__()):
-                # if the gun ids match, append the link to the list
-                if nskins[a].lower() == assets['data'][b]['skins'][c]['levels'][0]['uuid']:
-                    nskinimages.append(assets['data'][b]['skins'][c]['chromas'][0]['fullRender'])
-
-    for a in range(bskins.__len__()):
-        # compare with each gun type
-        for b in range(assets['data'].__len__()):
-            # compare with each skin of that gun
-            for c in range(assets['data'][b]['skins'].__len__()):
-                # if the gun ids match, append the link to the list
-                if bskins[a].lower() == assets['data'][b]['skins'][c]['levels'][0]['uuid']:
-                    bskinimages.append(assets['data'][b]['skins'][c]['chromas'][0]['fullRender'])
+    # # get skin images
+    # fskinimages = []
+    # nskinimages = []
+    # bskinimages = []
+    #
+    # # For each gun in skinlist
+    # for a in range(fskins.__len__()):
+    #     # compare with each gun type
+    #     for b in range(assets['data'].__len__()):
+    #         # compare with each skin of that gun
+    #         for c in range(assets['data'][b]['skins'].__len__()):
+    #             # if the gun ids match, append the link to the list
+    #             if fskins[a].lower() == assets['data'][b]['skins'][c]['levels'][0]['uuid']:
+    #                 fskinimages.append(assets['data'][b]['skins'][c]['chromas'][0]['fullRender'])
+    #
+    # for a in range(nskins.__len__()):
+    #     # compare with each gun type
+    #     for b in range(assets['data'].__len__()):
+    #         # compare with each skin of that gun
+    #         for c in range(assets['data'][b]['skins'].__len__()):
+    #             # if the gun ids match, append the link to the list
+    #             if nskins[a].lower() == assets['data'][b]['skins'][c]['levels'][0]['uuid']:
+    #                 nskinimages.append(assets['data'][b]['skins'][c]['chromas'][0]['fullRender'])
+    #
+    # for a in range(bskins.__len__()):
+    #     # compare with each gun type
+    #     for b in range(assets['data'].__len__()):
+    #         # compare with each skin of that gun
+    #         for c in range(assets['data'][b]['skins'].__len__()):
+    #             # if the gun ids match, append the link to the list
+    #             if bskins[a].lower() == assets['data'][b]['skins'][c]['levels'][0]['uuid']:
+    #                 bskinimages.append(assets['data'][b]['skins'][c]['chromas'][0]['fullRender'])
 
     skinsdata = {}
 
@@ -204,9 +208,9 @@ def fetchStore(userdata):
     bon['prices'] = bprices
 
     # append weapon images
-    feat['images'] = fskinimages
-    norm['images'] = nskinimages
-    bon['images'] = bskinimages
+    # feat['images'] = fskinimages
+    # norm['images'] = nskinimages
+    # bon['images'] = bskinimages
 
     # append weapon names
     feat['names'] = fnames
@@ -220,7 +224,7 @@ def fetchStore(userdata):
     # append everything to skin data
     skinsdata['feat'] = feat
     skinsdata['norm'] = norm
-    if not (bon['images'].__len__() == 0):
+    if not (bnames.__len__() == 0):
         skinsdata['bon'] = bon
 
     return skinsdata
