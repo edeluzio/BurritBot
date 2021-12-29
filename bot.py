@@ -2,18 +2,7 @@ from decimal import Decimal
 from datetime import datetime
 from discord.ext import commands
 from bs4 import BeautifulSoup
-import requests
-import pytz
-import discord
-import re
-import json
-import random
-import time
-import sqldb
-import asyncio
-import val
-import music
-import traceback
+import requests, pytz, discord, re, json, random, time, sqldb, asyncio, val, music, traceback
 
 intents = discord.Intents().all()
 client = commands.Bot(command_prefix='.', intents=intents)
@@ -607,14 +596,13 @@ async def play(ctx, *, query):
 
     message = ctx.message.content
     song = re.sub(r'(^.play)', '', message).lstrip()
-    video, source = music.search(query, song)
+    video, source = music.search(song)
     url = video['webpage_url']
     urltitle = video['title']
     voice = discord.utils.get(client.voice_clients, guild=ctx.guild)
 
-    print('adding to queue')
     try:
-        await music.add(ctx, voice, source, song, client, url, urltitle)
+        await music.add(ctx, voice, source, client, url, urltitle)
     except Exception as e:
          print(traceback.format_exc())
 
