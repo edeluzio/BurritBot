@@ -7,6 +7,7 @@ from base64 import b64encode, b64decode
 import zlib
 from codecs import encode
 from functools import reduce
+import datetime
 
 # auth stuff
 def auth(username, password):
@@ -79,8 +80,6 @@ def clientinfo(userdata):
 
 # val user stuff
 def fetchStore(userdata):
-
-
     authdata = auth(userdata['username'], userdata['password'])
 
     # Store Request
@@ -232,9 +231,14 @@ def fetchStore(userdata):
 def getLatestSzn():
     response = requests.get("https://valorant-api.com/v1/seasons")
     r=response.json()
-    # for season in r["data"]:
-    #     uuid = season["uuid"]
-    uuid = r["data"][10]["uuid"]
+    curDate = datetime.datetime.today()
+    for season in r["data"]:
+        if season["type"] is not None:
+            sznStart = datetime.datetime.strptime(season["startTime"][0:10], "%Y-%m-%d")
+            sznEnd = datetime.datetime.strptime(season["endTime"][0:10], "%Y-%m-%d")
+            if sznStart <= curDate <= sznEnd:
+                uuid = season["uuid"]
+                break
     return uuid
 
 def mmr(userdata):
