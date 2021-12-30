@@ -402,10 +402,11 @@ async def rank(ctx):
         mmrperc = Decimal(mmrperc).quantize(dec)
         mmrperc = str(mmrperc) + '%'
 
-        embed = discord.Embed(title=(valname.capitalize() + "'s current Valorant Rank"))
+        embed = discord.Embed(title=(valname.capitalize() + "'s Current Valorant Rank"))
         embed.add_field(name='Rank', value=mmrdata['rank'])
-        embed.add_field(name='Elo in rank', value=mmrdata['elo'], inline=False)
-        embed.add_field(name='Net elo from last game played', value=mmrdata['lastGame'])
+        embed.add_field(name='Elo In Rank', value=mmrdata['elo'], inline=False)
+        embed.add_field(name='Global Rank', value=mmrdata['globalRank'], inline=False)
+        embed.add_field(name='Net Elo From Last Game Played', value=mmrdata['lastGame'])
         embed.add_field(name='Wins', value=mmrdata['wins'], inline=False)
         embed.add_field(name='Losses', value=mmrdata['losses'])
         embed.add_field(name='Win Percentage', value=mmrperc,inline=False)
