@@ -258,13 +258,18 @@ def mmr(userdata):
 
     seasonInfo = getLatestSzn()
     sznrating = rating['QueueSkills']['competitive']['SeasonalInfoBySeasonID'][seasonInfo["uuid"]]
+    if sznrating['LeaderboardRank'] == 0:
+        globalRank = "Too shit to be on leaderboard"
+    else:
+        globalRank = str(sznrating['LeaderboardRank'])
 
     mmrdata = {
         'ranknum': sznrating['CompetitiveTier'],
         'elo': sznrating['RankedRating'],
         'wins': sznrating['NumberOfWins'],
         'losses': sznrating['NumberOfGames'] - sznrating['NumberOfWins'],
-        'lastGame': rating['LatestCompetitiveUpdate']['RankedRatingEarned']
+        'lastGame': rating['LatestCompetitiveUpdate']['RankedRatingEarned'],
+        'globalRank': globalRank,
     }
 
 
