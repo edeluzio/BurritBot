@@ -233,13 +233,18 @@ def getLatestSzn():
     r=response.json()
     curDate = datetime.datetime.today()
     for season in r["data"]:
-        if season["type"] is not None:
+        if season["type"] is None:
+            actName = season["displayName"].replace(" ", "")
+        else:
             sznStart = datetime.datetime.strptime(season["startTime"][0:10], "%Y-%m-%d")
             sznEnd = datetime.datetime.strptime(season["endTime"][0:10], "%Y-%m-%d")
             if sznStart <= curDate <= sznEnd:
                 uuid = season["uuid"]
                 break
-    return uuid
+    return {
+        "uuid": uuid,
+        "actName": actName
+    }
 
 def mmr(userdata):
 
@@ -251,8 +256,8 @@ def mmr(userdata):
     r = requests.get(url, headers=authdata['headers'])
     rating = r.json()
 
-    season = getLatestSzn()
-    sznrating = rating['QueueSkills']['competitive']['SeasonalInfoBySeasonID'][season]
+    seasonInfo = getLatestSzn()
+    sznrating = rating['QueueSkills']['competitive']['SeasonalInfoBySeasonID'][seasonInfo["uuid"]]
 
     mmrdata = {
         'ranknum': sznrating['CompetitiveTier'],
@@ -266,9 +271,12 @@ def mmr(userdata):
     r = requests.get('https://valorant-api.com/v1/competitivetiers')
     tiers = r.json()
 
-    for ranks in tiers['data'][1]['tiers']:
-        if mmrdata['ranknum'] == ranks['tier']:
-            mmrdata['rank'] = ranks['tierName']
+    for episode in tiers['data']:
+        if episode["assetObjectName"].split("_")[0].lower() == seasonInfo["actName"].lower():
+            for ranks in episode["tiers"]:
+                if mmrdata['ranknum'] == ranks['tier']:
+                    mmrdata['rank'] = ranks['tierName']
+                    break
 
     return mmrdata
 
