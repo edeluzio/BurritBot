@@ -324,21 +324,21 @@ async def shop(ctx):
     valname = re.sub(r'(^.shop)', '', message).lstrip()
 
     # kross and mark check cuz he sucks
-    if (valname.lower() == 'empty'):
-
-        # countdown
-        count = 60
-        embed = discord.Embed(description=("Looks we got a nongamer here! Guess you're gonna have to wait on your shop bitch"))
-        embed.add_field(name='Timer', value=str(count))
-        mes = await channel.send(embed=embed)
-        count = count - 1
-        time.sleep(0.9)
-        for i in range(count, -1, -1):
-            embed2 = discord.Embed(description="Looks we got a nongamer here! Guess you're gonna have to wait on your shop bitch")
-            embed2.add_field(name='Timer', value=str(count))
-            count = count - 1
-            await mes.edit(embed=embed2)
-            time.sleep(0.9)
+    # if (valname.lower() == 'empty'):
+    #
+    #     # countdown
+    #     count = 60
+    #     embed = discord.Embed(description=("Looks we got a nongamer here! Guess you're gonna have to wait on your shop bitch"))
+    #     embed.add_field(name='Timer', value=str(count))
+    #     mes = await channel.send(embed=embed)
+    #     count = count - 1
+    #     time.sleep(0.9)
+    #     for i in range(count, -1, -1):
+    #         embed2 = discord.Embed(description="Looks we got a nongamer here! Guess you're gonna have to wait on your shop bitch")
+    #         embed2.add_field(name='Timer', value=str(count))
+    #         count = count - 1
+    #         await mes.edit(embed=embed2)
+    #         time.sleep(0.9)
         # await channel.send(embed=embed)
 
     if not (sqldb.checkDB({'valname': valname})):
@@ -485,6 +485,7 @@ async def users(ctx):
     embed.add_field(name='Database ID', value=sqldb.getAll())
     await channel.send(embed=embed)
 
+
 @client.command()
 async def crosshair(ctx):
 
@@ -548,6 +549,7 @@ async def smurfing(ctx):
         await channel.send(embed=embed)
         return
 
+
 @client.command()
 async def matchRanks(ctx):
     author = ctx.author
@@ -607,6 +609,7 @@ async def play(ctx, *, query):
     except Exception as e:
          print(traceback.format_exc())
 
+
 @client.command()
 async def skip(ctx):
 
@@ -615,6 +618,7 @@ async def skip(ctx):
     message = ctx.message.content
     voice = discord.utils.get(client.voice_clients, guild=ctx.guild)
     await music.skip(ctx, voice, client)
+
 
 @client.command()
 async def stop(ctx):

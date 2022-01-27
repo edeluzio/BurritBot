@@ -17,15 +17,20 @@ def auth(username, password):
         'nonce': '1',
         'redirect_uri': 'https://playvalorant.com/opt_in',
         'response_type': 'token id_token',
+        'scope': 'account openid'
     }
-    r = session.post('https://auth.riotgames.com/api/v1/authorization', json=data)
+
+    headers = {
+        'User-Agent': 'RiotClient/43.0.1.4195386.4190634 rso-auth (Windows;10;;Professional, x64)'
+    }
+    r = session.post('https://auth.riotgames.com/api/v1/authorization', json=data, headers=headers)
 
     data = {
         'type': 'auth',
         'username': username,
         'password': password
     }
-    r = session.put('https://auth.riotgames.com/api/v1/authorization', json=data)
+    r = session.put('https://auth.riotgames.com/api/v1/authorization', json=data, headers=headers)
     pattern = re.compile(
         'access_token=((?:[a-zA-Z]|\d|\.|-|_)*).*id_token=((?:[a-zA-Z]|\d|\.|-|_)*).*expires_in=(\d*)')
     data = pattern.findall(r.json()['response']['parameters']['uri'])[0]
@@ -81,6 +86,10 @@ def clientinfo(userdata):
 # val user stuff
 def fetchStore(userdata):
     authdata = auth(userdata['username'], userdata['password'])
+
+    r = requests.get(f'https://pd.ap.a.pvp.net/match-history/v1/history/{authdata["user_id"]}' + '?startIndex=0&endIndex=15&queue={null, competitive, custom, deathmatch, ggteam, newmap, onefa, snowball, spikerush, unrated}', headers=authdata['headers'])
+    test = r.json()
+    print()
 
     # Store Request
     r = requests.get(f'https://pd.na.a.pvp.net/store/v2/storefront/' + authdata['user_id'],headers=authdata['headers'])
@@ -272,7 +281,6 @@ def mmr(userdata):
         'globalRank': globalRank,
     }
 
-
     r = requests.get('https://valorant-api.com/v1/competitivetiers')
     tiers = r.json()
 
@@ -285,8 +293,8 @@ def mmr(userdata):
 
     return mmrdata
 
-def pastmmr(userdata,szn):
 
+def pastmmr(userdata,szn):
     authdata = auth(userdata['username'], userdata['password'])
     cvers = clientinfo(userdata)
     authdata['headers'].update(cvers)
@@ -298,10 +306,10 @@ def pastmmr(userdata,szn):
     past = seasons['QueueSkills']['competitive']['SeasonalInfoBySeasonID'][szn]
 
     mmrdata = {
-    'ranknum': past['CompetitiveTier'],
-    'sznrank': past['Rank'],
-    'wins': past['NumberOfWins'],
-    'losses': past['NumberOfGames'] - past['NumberOfWins'],
+        'ranknum': past['CompetitiveTier'],
+        'sznrank': past['Rank'],
+        'wins': past['NumberOfWins'],
+        'losses': past['NumberOfGames'] - past['NumberOfWins'],
     }
 
     r = requests.get('https://valorant-api.com/v1/competitivetiers')
@@ -513,11 +521,11 @@ def getAgents(userdata):
     authdata = auth(userdata['username'], userdata['password'])
     cvers = clientinfo(userdata)
     authdata['headers'].update(cvers)
-    url = 'https://shared.na.a.pvp.net/content-service/v2/content'
+    # url = 'https://shared.na.a.pvp.net/content-service/v2/content'
+    url = 'https://valorant-api.com/v1/agents'
 
     r = requests.get(url, headers=authdata['headers'])
     charlist = r.json()
-    charlist = charlist['Characters']
     return charlist
 
 def getPlayerLoadout(userdata):
