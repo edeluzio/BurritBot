@@ -261,8 +261,6 @@ def mmr(userdata):
     cvers = clientinfo(userdata)
     authdata['headers'].update(cvers)
     url = 'https://pd.na.a.pvp.net/mmr/v1/players/' + authdata['user_id']
-
-
     r = requests.get(url, headers=authdata['headers'])
     rating = r.json()
 
@@ -353,6 +351,62 @@ def mmr(userdata):
     }
     mmrdata['history10'] = history10
     return mmrdata
+
+def lastMatch(userdata):
+    authdata = auth(userdata['username'], userdata['password'])
+    cvers = clientinfo(userdata)
+    authdata['headers'].update(cvers)
+    url = 'https://pd.na.a.pvp.net/mmr/v1/players/' + authdata['user_id']
+    r = requests.get(url, headers=authdata['headers'])
+    rating = r.json()
+
+
+    url = "https://pd.na.a.pvp.net/match-history/v1/history/" + authdata['user_id'] + "?startIndex=0&endIndex=20"
+    r = requests.get(url, headers=authdata['headers'])
+    matches = r.json()
+    matchindex = 0
+    gameFound = False
+    while gameFound is False:
+        # get game info
+        url = "https://pd.na.a.pvp.net/match-details/v1/matches/" + matches['History'][matchindex]['MatchID']
+        matchindex = matchindex + 1
+        r = requests.get(url, headers=authdata['headers'])
+        gameinfo = r.json()
+        # check make sure its ranked game
+        if gameinfo['matchInfo']['isRanked'] is not True:
+            matchindex = matchindex + 1
+            continue
+        else:
+            game = gameinfo
+            gameFound = True
+
+    matchData = {}
+    for player in game['players']:
+        if player['gameName'].lower() == userdata['valname'].lower():
+            # get player info
+            team = player['teamId']
+
+            # get damage
+            damage = 0
+            for damageValues in player['roundDamage']:
+                damage = damage + damageValues['damage']
+
+            for teams in game['teams']:
+                if teams['teamId'] == team:
+                    if teams['won'] is True:
+                        result = 'Win'
+                    else:
+                        result = 'Loss'
+
+            matchData['score'] = player['stats']['score']
+            matchData['kills'] = player['stats']['kills']
+            matchData['deaths'] = player['stats']['deaths']
+            matchData['assists'] = player['stats']['assists']
+            matchData['damage'] = damage
+            matchData['result'] = result
+            matchData['elo'] = rating['LatestCompetitiveUpdate']['RankedRatingEarned']
+
+            return matchData
 
 
 def pastmmr(userdata,szn):

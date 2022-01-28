@@ -419,6 +419,36 @@ async def rank(ctx):
 
         await channel.send(embed=embed)
 
+@client.command()
+async def lastmatch(ctx):
+    author = ctx.author
+    channel = ctx.channel
+    message = ctx.message.content
+    valname = re.sub(r'(^.lastmatch)', '', message).lstrip()
+
+    if not (sqldb.checkDB({'valname': valname})):
+        embed = discord.Embed(description=(valname.capitalize() + " is not registered in the database"))
+        await channel.send(embed=embed)
+        return
+    else:
+        dbinfo = sqldb.getDB({'valname': valname})
+        try:
+            lastmatch = val.lastMatch(dbinfo)
+        except:
+            embed = discord.Embed(description=(valname.capitalize() + " has not played a competitive game this season"))
+            await channel.send(embed=embed)
+            return
+
+        embed = discord.Embed(title=(valname.capitalize() + "'s Last Competitive Game"))
+        embed.add_field(name='Score', value=lastmatch['score'], inline=False)
+        embed.add_field(name='Kills', value=lastmatch['kills'], inline=False)
+        embed.add_field(name='Deaths', value=lastmatch['deaths'], inline=False)
+        embed.add_field(name='Assists', value=lastmatch['assists'], inline=False)
+        embed.add_field(name='Damage', value=lastmatch['damage'], inline=False)
+        embed.add_field(name='Result', value=lastmatch['result'], inline=False)
+        embed.add_field(name='Elo Gain/Loss', value=lastmatch['elo'], inline=False)
+        await channel.send(embed=embed)
+
 
 @client.command()
 async def pastrank(ctx):
