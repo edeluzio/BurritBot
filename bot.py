@@ -402,6 +402,10 @@ async def rank(ctx):
         mmrperc = Decimal(mmrperc).quantize(dec)
         mmrperc = str(mmrperc) + '%'
 
+        # streak and last 10 games
+        l10 = str(mmrdata['history10']['wins']) + '-' + str(mmrdata['history10']['losses'])
+        streak = mmrdata['history10']['streaktype'] + str(mmrdata['history10']['streak'])
+
         embed = discord.Embed(title=(valname.capitalize() + "'s Current Valorant Rank"))
         embed.add_field(name='Rank', value=mmrdata['rank'])
         embed.add_field(name='Elo In Rank', value=mmrdata['elo'], inline=False)
@@ -410,6 +414,8 @@ async def rank(ctx):
         embed.add_field(name='Wins', value=mmrdata['wins'], inline=False)
         embed.add_field(name='Losses', value=mmrdata['losses'])
         embed.add_field(name='Win Percentage', value=mmrperc,inline=False)
+        embed.add_field(name='Record In Last 10 Games', value=l10, inline=False)
+        embed.add_field(name='Current Streak', value=streak, inline=False)
 
         await channel.send(embed=embed)
 

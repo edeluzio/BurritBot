@@ -262,6 +262,7 @@ def mmr(userdata):
     authdata['headers'].update(cvers)
     url = 'https://pd.na.a.pvp.net/mmr/v1/players/' + authdata['user_id']
 
+
     r = requests.get(url, headers=authdata['headers'])
     rating = r.json()
 
@@ -291,6 +292,66 @@ def mmr(userdata):
                     mmrdata['rank'] = ranks['tierName']
                     break
 
+    url = "https://pd.na.a.pvp.net/match-history/v1/history/" + authdata['user_id'] + "?startIndex=0&endIndex=20"
+    r = requests.get(url, headers=authdata['headers'])
+    matches = r.json()
+    print()
+
+    # last 10 history
+    streak = 0
+    streaktype = None
+    matchindex = 0
+    games = 0
+    wins = 0
+    losses = 0
+    while games <= 10:
+        # get game info
+        url = "https://pd.na.a.pvp.net/match-details/v1/matches/" + matches['History'][matchindex]['MatchID']
+        matchindex=matchindex + 1
+        r = requests.get(url, headers=authdata['headers'])
+        gameinfo = r.json()
+        # check make sure its ranked game
+        if gameinfo['matchInfo']['isRanked'] is not True:
+            continue
+        else:
+            # get player team
+            for player in gameinfo['players']:
+                if player['gameName'].lower() == userdata['username']:
+                    pteam = player['teamId']
+                    break
+            # check if win or loss
+            for team in gameinfo['teams']:
+                if team['teamId'] == pteam:
+                    games = games + 1
+                    if team['won'] is True:
+                        wins = wins + 1
+                        if streaktype == 'W':
+                            streak = streak + 1
+                        else:
+                            finalstreak = streak
+                    else:
+                        losses = losses + 1
+                        if streaktype == 'L':
+                            streak = streak + 1
+                        else:
+                            finalstreak = streak
+
+                    # set streak type
+                    if games == 1:
+                        if wins == 1:
+                            streaktype = 'W'
+                        else:
+                            streaktype = 'L'
+        if games == 10:
+            break
+
+    history10 = {
+        'wins': wins,
+        'losses': losses,
+        'streak': finalstreak,
+        'streaktype': streaktype,
+    }
+    mmrdata['history10'] = history10
     return mmrdata
 
 
