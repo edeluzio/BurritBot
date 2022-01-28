@@ -316,7 +316,7 @@ def mmr(userdata):
         else:
             # get player team
             for player in gameinfo['players']:
-                if player['gameName'].lower() == userdata['username']:
+                if player['gameName'].lower() == userdata['valname'].lower():
                     pteam = player['teamId']
                     break
             # check if win or loss
