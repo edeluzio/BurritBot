@@ -369,7 +369,6 @@ def lastMatch(userdata):
     while gameFound is False:
         # get game info
         url = "https://pd.na.a.pvp.net/match-details/v1/matches/" + matches['History'][matchindex]['MatchID']
-        matchindex = matchindex + 1
         r = requests.get(url, headers=authdata['headers'])
         gameinfo = r.json()
         # check make sure its ranked game
