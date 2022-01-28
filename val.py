@@ -299,7 +299,7 @@ def mmr(userdata):
     games = 0
     streak = 0
     streaktype = None
-    matchindex = 0
+    finalstreak = None
     games = 0
     wins = 0
     losses = 0
@@ -311,6 +311,7 @@ def mmr(userdata):
         url = "https://pd.na.a.pvp.net/match-details/v1/matches/" + match['MatchID']
         r = requests.get(url, headers=authdata['headers'])
         gameinfo = r.json()
+        print()
         # check make sure its ranked game
         # get player team
         for player in gameinfo['players']:
@@ -321,25 +322,28 @@ def mmr(userdata):
         for team in gameinfo['teams']:
             if team['teamId'] == pteam:
                 games = games + 1
+
+                # set streak type
+                if games == 1:
+                    if team['won'] is True:
+                        streaktype = 'W'
+                    else:
+                        streaktype = 'L'
+
                 if team['won'] is True:
                     wins = wins + 1
-                    if streaktype == 'W':
+                    if streaktype == 'W' and finalstreak is None:
                         streak = streak + 1
                     else:
                         finalstreak = streak
                 else:
                     losses = losses + 1
-                    if streaktype == 'L':
+                    if streaktype == 'L' and finalstreak is None:
                         streak = streak + 1
                     else:
                         finalstreak = streak
 
-                # set streak type
-                if games == 1:
-                    if wins == 1:
-                        streaktype = 'W'
-                    else:
-                        streaktype = 'L'
+        # stop at 10 games
         if games == 10:
             break
 
