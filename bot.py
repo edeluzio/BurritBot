@@ -432,12 +432,13 @@ async def lastmatch(ctx):
         return
     else:
         dbinfo = sqldb.getDB({'valname': valname})
-        try:
-            lastmatch = val.lastMatch(dbinfo)
-        except:
-            embed = discord.Embed(description=(valname.capitalize() + " has not played a competitive game this season"))
-            await channel.send(embed=embed)
-            return
+        lastmatch = val.lastMatch(dbinfo)
+        # try:
+        #     lastmatch = val.lastMatch(dbinfo)
+        # except:
+        #     embed = discord.Embed(description=(valname.capitalize() + " has not played a competitive game this season"))
+        #     await channel.send(embed=embed)
+        #     return
 
         embed = discord.Embed(title=(valname.capitalize() + "'s Last Competitive Game"))
         embed.add_field(name='Score', value=lastmatch['score'], inline=False)

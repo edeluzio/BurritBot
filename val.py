@@ -290,22 +290,22 @@ def mmr(userdata):
                     mmrdata['rank'] = ranks['tierName']
                     break
 
-    url = "https://pd.na.a.pvp.net/match-history/v1/history/" + authdata['user_id'] + "?startIndex=0&endIndex=20"
+    url = "https://pd.na.a.pvp.net/mmr/v1/players/" + authdata['user_id'] + "/competitiveupdates?startIndex=0&endIndex=20&queue=competitive"
     r = requests.get(url, headers=authdata['headers'])
     matches = r.json()
     print()
 
     # last 10 history
+    games = 0
     streak = 0
     streaktype = None
     matchindex = 0
     games = 0
     wins = 0
     losses = 0
-    while games <= 10:
+    for match in matches['Matches']:
         # get game info
-        url = "https://pd.na.a.pvp.net/match-details/v1/matches/" + matches['History'][matchindex]['MatchID']
-        matchindex=matchindex + 1
+        url = "https://pd.na.a.pvp.net/match-details/v1/matches/" + match['MatchID']
         r = requests.get(url, headers=authdata['headers'])
         gameinfo = r.json()
         # check make sure its ranked game
@@ -356,31 +356,18 @@ def lastMatch(userdata):
     authdata = auth(userdata['username'], userdata['password'])
     cvers = clientinfo(userdata)
     authdata['headers'].update(cvers)
-    url = 'https://pd.na.a.pvp.net/mmr/v1/players/' + authdata['user_id']
-    r = requests.get(url, headers=authdata['headers'])
-    rating = r.json()
 
-
-    url = "https://pd.na.a.pvp.net/match-history/v1/history/" + authdata['user_id'] + "?startIndex=0&endIndex=20"
+    url = "https://pd.na.a.pvp.net/mmr/v1/players/" + authdata['user_id'] + "/competitiveupdates?startIndex=0&endIndex=1&queue=competitive"
     r = requests.get(url, headers=authdata['headers'])
     matches = r.json()
-    matchindex = 0
-    gameFound = False
-    while gameFound is False:
-        # get game info
-        url = "https://pd.na.a.pvp.net/match-details/v1/matches/" + matches['History'][matchindex]['MatchID']
-        r = requests.get(url, headers=authdata['headers'])
-        gameinfo = r.json()
-        # check make sure its ranked game
-        if gameinfo['matchInfo']['isRanked'] is not True:
-            matchindex = matchindex + 1
-            continue
-        else:
-            game = gameinfo
-            gameFound = True
+    game = matches['Matches'][0]['MatchID']
+
+    url = "https://pd.na.a.pvp.net/match-details/v1/matches/" + game
+    r = requests.get(url, headers=authdata['headers'])
+    gameinfo = r.json()
 
     matchData = {}
-    for player in game['players']:
+    for player in gameinfo['players']:
         if player['gameName'].lower() == userdata['valname'].lower():
             # get player info
             team = player['teamId']
@@ -390,7 +377,7 @@ def lastMatch(userdata):
             for damageValues in player['roundDamage']:
                 damage = damage + damageValues['damage']
 
-            for teams in game['teams']:
+            for teams in gameinfo['teams']:
                 if teams['teamId'] == team:
                     if teams['won'] is True:
                         result = 'Win'
@@ -403,7 +390,7 @@ def lastMatch(userdata):
             matchData['assists'] = player['stats']['assists']
             matchData['damage'] = damage
             matchData['result'] = result
-            matchData['elo'] = rating['LatestCompetitiveUpdate']['RankedRatingEarned']
+            matchData['elo'] = matches['Matches'][0]['RankedRatingEarned']
 
             return matchData
 
