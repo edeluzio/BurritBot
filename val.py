@@ -304,42 +304,42 @@ def mmr(userdata):
     wins = 0
     losses = 0
     for match in matches['Matches']:
+        # disregard dodges
+        if match['MapID'] == '':
+            continue
         # get game info
         url = "https://pd.na.a.pvp.net/match-details/v1/matches/" + match['MatchID']
         r = requests.get(url, headers=authdata['headers'])
         gameinfo = r.json()
         # check make sure its ranked game
-        if gameinfo['matchInfo']['isRanked'] is not True:
-            continue
-        else:
-            # get player team
-            for player in gameinfo['players']:
-                if player['gameName'].lower() == userdata['valname'].lower():
-                    pteam = player['teamId']
-                    break
-            # check if win or loss
-            for team in gameinfo['teams']:
-                if team['teamId'] == pteam:
-                    games = games + 1
-                    if team['won'] is True:
-                        wins = wins + 1
-                        if streaktype == 'W':
-                            streak = streak + 1
-                        else:
-                            finalstreak = streak
+        # get player team
+        for player in gameinfo['players']:
+            if player['subject'].lower() == authdata['user_id'].lower():
+                pteam = player['teamId']
+                break
+        # check if win or loss
+        for team in gameinfo['teams']:
+            if team['teamId'] == pteam:
+                games = games + 1
+                if team['won'] is True:
+                    wins = wins + 1
+                    if streaktype == 'W':
+                        streak = streak + 1
                     else:
-                        losses = losses + 1
-                        if streaktype == 'L':
-                            streak = streak + 1
-                        else:
-                            finalstreak = streak
+                        finalstreak = streak
+                else:
+                    losses = losses + 1
+                    if streaktype == 'L':
+                        streak = streak + 1
+                    else:
+                        finalstreak = streak
 
-                    # set streak type
-                    if games == 1:
-                        if wins == 1:
-                            streaktype = 'W'
-                        else:
-                            streaktype = 'L'
+                # set streak type
+                if games == 1:
+                    if wins == 1:
+                        streaktype = 'W'
+                    else:
+                        streaktype = 'L'
         if games == 10:
             break
 
