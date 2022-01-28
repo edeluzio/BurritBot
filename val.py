@@ -368,7 +368,7 @@ def lastMatch(userdata):
 
     matchData = {}
     for player in gameinfo['players']:
-        if player['gameName'].lower() == userdata['valname'].lower():
+        if player['subject'].lower() == authdata['user_id'].lower():
             # get player info
             team = player['teamId']
 
