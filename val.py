@@ -1,66 +1,75 @@
-import asyncio
 import json
-import aiohttp
 import re
 import requests
+import socket
+from collections import OrderedDict
 from base64 import b64encode, b64decode
 import zlib
-from codecs import encode
-from functools import reduce
 import datetime
 
 # auth stuff
 def auth(username, password):
+
+    answers = socket.getaddrinfo('auth.riotgames.com', 443)
+    (family, type, proto, canonname, (address, port)) = answers[0]
+
+    headers = OrderedDict({
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Host': "auth.riotgames.com",
+        'User-Agent': 'RiotClient/43.0.1.4195386.4190634 rso-auth (Windows;10;;Professional, x64)'
+    })
+
     session = requests.session()
+    session.headers = headers
+
     data = {
         'client_id': 'play-valorant-web-prod',
         'nonce': '1',
         'redirect_uri': 'https://playvalorant.com/opt_in',
         'response_type': 'token id_token',
-        'scope': 'account openid'
     }
+    r = session.post(f'https://{address}/api/v1/authorization', json=data, headers=headers, verify=False)
 
-    headers = {
-        'User-Agent': 'RiotClient/43.0.1.4195386.4190634 rso-auth (Windows;10;;Professional, x64)'
-    }
-    r = session.post('https://auth.riotgames.com/api/v1/authorization', json=data, headers=headers)
-
+    # print(r.text)
     data = {
         'type': 'auth',
         'username': username,
         'password': password
     }
-    r = session.put('https://auth.riotgames.com/api/v1/authorization', json=data, headers=headers)
-    pattern = re.compile(
-        'access_token=((?:[a-zA-Z]|\d|\.|-|_)*).*id_token=((?:[a-zA-Z]|\d|\.|-|_)*).*expires_in=(\d*)')
+    r = session.put(f'https://{address}/api/v1/authorization', json=data, headers=headers, verify=False)
+    pattern = re.compile('access_token=((?:[a-zA-Z]|\d|\.|-|_)*).*id_token=((?:[a-zA-Z]|\d|\.|-|_)*).*expires_in=(\d*)')
     data = pattern.findall(r.json()['response']['parameters']['uri'])[0]
     access_token = data[0]
+    # print('Access Token: ' + access_token)
 
     headers = {
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Host': "entitlements.auth.riotgames.com",
+        'User-Agent': 'RiotClient/43.0.1.4195386.4190634 rso-auth (Windows;10;;Professional, x64)',
         'Authorization': f'Bearer {access_token}',
     }
     r = session.post('https://entitlements.auth.riotgames.com/api/token/v1', headers=headers, json={})
     entitlements_token = r.json()['entitlements_token']
+    # print('Entitlements Token: ' + entitlements_token)
+
+    headers = {
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Host': "auth.riotgames.com",
+        'User-Agent': 'RiotClient/43.0.1.4195386.4190634 rso-auth (Windows;10;;Professional, x64)',
+        'Authorization': f'Bearer {access_token}',
+    }
 
     r = session.post('https://auth.riotgames.com/userinfo', headers=headers, json={})
     user_id = r.json()['sub']
-
-    # main program done
-    # access_token
-    # entitlements_token
-    # user_id
-
-    headers = {
-        'Authorization': f'Bearer {access_token}',
-        'X-Riot-Entitlements-JWT': entitlements_token,
-    }
-
-    authdata = {
-        'headers': headers,
-        'user_id': user_id
-    }
-    return authdata
+    # print('User ID: ' + user_id)
+    headers['X-Riot-Entitlements-JWT'] = entitlements_token
+    del headers['Host']
     session.close()
+
+    return {
+        'user_id': user_id,
+        'headers': headers,
+    }
 
 def clientinfo(userdata):
 
@@ -86,10 +95,6 @@ def clientinfo(userdata):
 # val user stuff
 def fetchStore(userdata):
     authdata = auth(userdata['username'], userdata['password'])
-
-    r = requests.get(f'https://pd.ap.a.pvp.net/match-history/v1/history/{authdata["user_id"]}' + '?startIndex=0&endIndex=15&queue={null, competitive, custom, deathmatch, ggteam, newmap, onefa, snowball, spikerush, unrated}', headers=authdata['headers'])
-    test = r.json()
-    print()
 
     # Store Request
     r = requests.get(f'https://pd.na.a.pvp.net/store/v2/storefront/' + authdata['user_id'],headers=authdata['headers'])
@@ -129,35 +134,31 @@ def fetchStore(userdata):
     r = requests.get(f'https://valorant-api.com/v1/weapons', headers=authdata['headers'])
     assets = r.json()
 
-    # get featured ids, prices and append
+    # get featured store ids and names
     for i in range(featuredlength):
         fskins.append(store['FeaturedBundle']['Bundle']['Items'][i]['Item']['ItemID'])
         if (int(store['FeaturedBundle']['Bundle']['Items'][i]['BasePrice']) > 700):
             fprices.append(store['FeaturedBundle']['Bundle']['Items'][i]['BasePrice'])
-
-    # append weapon name to a list, will be used for captions of the images
     for featSkin in range(fskins.__len__()):
         for asset in range(assets['data'].__len__()):
             for skin in range(assets['data'][asset]['skins'].__len__()):
                 if fskins[featSkin].lower() == assets['data'][asset]['skins'][skin]['levels'][0]['uuid'].lower():
                     fnames.append(assets['data'][asset]['skins'][skin]['levels'][0]['displayName'])
 
-    # get normal ids
+    # get normal store ids and names
     for k in range(normallength):
         nskins.append(store['SkinsPanelLayout']['SingleItemOffers'][k])
-    # append weapon name to list
     for normSkin in range(nskins.__len__()):
         for asset in range(assets['data'].__len__()):
             for skin in range(assets['data'][asset]['skins'].__len__()):
                 if nskins[normSkin].lower() == assets['data'][asset]['skins'][skin]['levels'][0]['uuid'].lower():
                     nnames.append(assets['data'][asset]['skins'][skin]['levels'][0]['displayName'])
 
-    # try to get bonus ids and print
+    # try to get bonus ids and names
     try:
         for m in range(bonuslength):
             bskins.append(store['BonusStore']['BonusStoreOffers'][m]['Offer']['OfferID'])
             bprices.append(list(store['BonusStore']['BonusStoreOffers'][m]['DiscountCosts'].values())[0])
-        # append weapon name to list
         for bonSkin in range(bskins.__len__()):
             for asset in range(assets['data'].__len__()):
                 for skin in range(assets['data'][asset]['skins'].__len__()):
@@ -303,6 +304,7 @@ def mmr(userdata):
     games = 0
     wins = 0
     losses = 0
+    ties = 0
     for match in matches['Matches']:
         # disregard dodges
         if match['MapID'] == '':
@@ -323,16 +325,30 @@ def mmr(userdata):
             if team['teamId'] == pteam:
                 games = games + 1
 
+                if pteam == gameinfo['teams'][0]['teamId']:
+                    otherTeam = gameinfo['teams'][1]
+                else:
+                    otherTeam = gameinfo['teams'][0]
+
                 # set streak type
                 if games == 1:
-                    if team['won'] is True:
+                    if team['won'] is True and otherTeam['won'] is False:
                         streaktype = 'W'
+                    if team['won'] is False and otherTeam['won'] is False:
+                        streaktype = 'T'
                     else:
                         streaktype = 'L'
 
-                if team['won'] is True:
+                if team['won'] is True and otherTeam['won'] is False:
                     wins = wins + 1
                     if streaktype == 'W' and finalstreak is None:
+                        streak = streak + 1
+                    else:
+                        finalstreak = streak
+
+                elif team['won'] is False and otherTeam['won'] is False:
+                    ties = ties + 1
+                    if streaktype == 'T' and finalstreak is None:
                         streak = streak + 1
                     else:
                         finalstreak = streak
@@ -350,6 +366,7 @@ def mmr(userdata):
     history10 = {
         'wins': wins,
         'losses': losses,
+        'ties': ties,
         'streak': finalstreak,
         'streaktype': streaktype,
     }

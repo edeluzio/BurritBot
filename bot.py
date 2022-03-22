@@ -404,7 +404,7 @@ async def rank(ctx):
         mmrperc = str(mmrperc) + '%'
 
         # streak and last 10 games
-        l10 = str(mmrdata['history10']['wins']) + '-' + str(mmrdata['history10']['losses'])
+        l10 = str(mmrdata['history10']['wins']) + '-' + str(mmrdata['history10']['losses']) + '-' + str(mmrdata['history10']['ties'])
         streak = mmrdata['history10']['streaktype'] + str(mmrdata['history10']['streak'])
 
         embed = discord.Embed(title=(valname.capitalize() + "'s Current Valorant Rank"))
