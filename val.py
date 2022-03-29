@@ -291,7 +291,7 @@ def mmr(userdata):
                     mmrdata['rank'] = ranks['tierName']
                     break
 
-    url = "https://pd.na.a.pvp.net/mmr/v1/players/" + authdata['user_id'] + "/competitiveupdates?startIndex=0&endIndex=20&queue=competitive"
+    url = "https://pd.na.a.pvp.net/mmr/v1/players/" + authdata['user_id'] + "/competitiveupdates?startIndex=0&queue=competitive"
     r = requests.get(url, headers=authdata['headers'])
     matches = r.json()
     print()
@@ -334,12 +334,12 @@ def mmr(userdata):
                 if games == 1:
                     if team['won'] is True and otherTeam['won'] is False:
                         streaktype = 'W'
-                    if team['won'] is False and otherTeam['won'] is False:
+                    elif team['won'] is False and otherTeam['won'] is False:
                         streaktype = 'T'
                     else:
                         streaktype = 'L'
 
-                if team['won'] is True and otherTeam['won'] is False:
+                elif team['won'] is True and otherTeam['won'] is False:
                     wins = wins + 1
                     if streaktype == 'W' and finalstreak is None:
                         streak = streak + 1
