@@ -298,7 +298,7 @@ def mmr(userdata):
 
     # last 10 history
     games = 0
-    streak = 0
+    streak = 1
     streaktype = None
     finalstreak = None
     games = 0
@@ -352,6 +352,7 @@ def mmr(userdata):
                         streak = streak + 1
                     else:
                         finalstreak = streak
+
                 else:
                     losses = losses + 1
                     if streaktype == 'L' and finalstreak is None:
