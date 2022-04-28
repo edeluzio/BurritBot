@@ -391,12 +391,12 @@ async def rank(ctx):
     else:
         dbinfo = sqldb.getDB({'valname': valname})
         mmrdata = val.mmr(dbinfo)
-        # try:
-        #     mmrdata = val.mmr(dbinfo)
-        # except:
-        #     embed = discord.Embed(description=(valname.capitalize()+ " has not played a competitive game this season"))
-        #     await channel.send(embed=embed)
-        #     return
+
+        if mmrdata is False:
+            embed = discord.Embed(description=(valname.capitalize()+ " has not played a competitive game this season"))
+            await channel.send(embed=embed)
+            return
+
         dec = Decimal(10) ** -2
         mmrtotal = mmrdata['wins'] + mmrdata['losses']
         mmrperc = (mmrdata['wins'] / mmrtotal * 100)

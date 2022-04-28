@@ -266,7 +266,11 @@ def mmr(userdata):
     rating = r.json()
 
     seasonInfo = getLatestSzn()
-    sznrating = rating['QueueSkills']['competitive']['SeasonalInfoBySeasonID'][seasonInfo["uuid"]]
+    try:
+        sznrating = rating['QueueSkills']['competitive']['SeasonalInfoBySeasonID'][seasonInfo["uuid"]]
+    except:
+        return False
+
     if sznrating['LeaderboardRank'] == 0:
         globalRank = "Too shit to be on leaderboard"
     else:
