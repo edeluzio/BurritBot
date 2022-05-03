@@ -315,6 +315,65 @@ async def valsignup(ctx):
         # say congrats
         return await author.send("You are now registered in the database!")
 
+@client.command()
+async def valsignup2fa(ctx):
+    author = ctx.author
+    channel = ctx.channel
+    message = ctx.message
+
+    await author.send(
+        "Welcome to the Valorant x Burrit database signup.\nOnce signed up, other users can do things like view your shop, MMR, and many more things to come!")
+
+    await author.send("First, respond with your Valorant username (without the #NA1).")
+    try:
+        valname = await client.wait_for('message', check=check(author), timeout=30.0)
+        valname = valname.content
+    except asyncio.TimeoutError:
+        return await author.send("Sorry, you took too long too respond. Please reenter .valsignup2fa")
+
+    await author.send("Next, respond with your Riot username.")
+    try:
+        username = await client.wait_for('message', check=check(author), timeout=30.0)
+        username = username.content
+    except asyncio.TimeoutError:
+        return await author.send("Sorry, you took too long too respond. Please reenter .valsignup2fa")
+
+
+    await author.send(
+        "Next, respond with your Valorant password.\nYour password will NOT be saved to the database, but is needed to obtain authorization headers for HTTP requests. You are also free to delete these messages after responding with your password")
+    try:
+        password = await client.wait_for('message', check=check(author), timeout=30.0)
+        password = password.content
+    except asyncio.TimeoutError:
+        return await author.send("Sorry, you took too long too respond. Please reenter .valsignup2fa")
+
+
+    session = val.auth2fa(username, password)
+    # check if val acc/ get val auth stuff
+    await author.send(
+        "Check your email for your 2FA code. Respond with this code")
+    try:
+        code = await client.wait_for('message', check=check(author), timeout=45.0)
+        code = code.content
+    except asyncio.TimeoutError:
+        return await author.send("Sorry, you took too long too respond. Please reenter .valsignup2fa")
+
+    vauth = val.auth2facode(author, client, code, session)
+    # check db
+    data = {'username': username, 'valname': valname, 'password': password, 'authdata': vauth}
+    if sqldb.checkDB(data):
+        errmsg = "This user has already signed up in the database"
+        await author.send(errmsg)
+        return
+
+    # add to db
+    else:
+        sqldb.addDB(data)
+
+        # say congrats
+        return await author.send("You are now registered in the database!")
+
+
 
 @client.command()
 async def shop(ctx):

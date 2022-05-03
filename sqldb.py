@@ -22,10 +22,10 @@ import val
 #
 
 
-def delDB(user,valname):
+def delDB(valname):
     conn = sqlite3.connect('db/user.db')
     curs = conn.cursor()
-    curs.execute("DELETE FROM users WHERE username=:username AND valname=:valname" , {'username': user, 'valname': valname,})
+    curs.execute("DELETE FROM users WHERE valname=:valname" , {'valname': valname,})
     conn.commit()
     conn.close()
 
