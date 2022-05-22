@@ -2,7 +2,7 @@ from decimal import Decimal
 from datetime import datetime
 from discord.ext import commands
 from bs4 import BeautifulSoup
-import requests, pytz, discord, re, json, random, time, sqldb, asyncio, val, music, traceback
+import requests, pytz, discord, re, json, random, time, sqldb, asyncio, valBurrit, music, traceback
 
 intents = discord.Intents().all()
 client = commands.Bot(command_prefix='.', intents=intents)
@@ -295,7 +295,7 @@ async def valsignup(ctx):
 
     # check if val acc/ get val auth stuff
     try:
-        vauth = val.auth(username, password)
+        vauth = valBurrit.auth(username, password, author, client)
     except:
         errmsg = "The username: " + username + " and password: " + password + " is not associated with a Riot account. Please reenter .valsignup"
         await author.send(errmsg)
@@ -314,6 +314,23 @@ async def valsignup(ctx):
 
         # say congrats
         return await author.send("You are now registered in the database!")
+
+async def getCode(author, session, address, client):
+    await author.send("You just used a burrit command: Check your email for your 2FA code, and respond with this code")
+    code = await client.wait_for('message', check=check(author), timeout=45.0)
+    code = code.content
+    await author.send('Code recieved')
+    try:
+        data = {
+                'type': 'multifactor',
+                'code': code,
+                'rememberDevice': False
+            }
+        r = session.put(f'https://{address}/api/v1/authorization', json=data, headers=session.headers, verify=False)
+        return r
+    except asyncio.TimeoutError:
+        await author.send("Sorry, you took too long too respond. Please reenter the command")
+
 
 @client.command()
 async def valsignup2fa(ctx):
@@ -347,18 +364,23 @@ async def valsignup2fa(ctx):
     except asyncio.TimeoutError:
         return await author.send("Sorry, you took too long too respond. Please reenter .valsignup2fa")
 
+    session, res = valBurrit.auth2fa(username, password)
 
-    session = val.auth2fa(username, password)
     # check if val acc/ get val auth stuff
-    await author.send(
-        "Check your email for your 2FA code. Respond with this code")
-    try:
-        code = await client.wait_for('message', check=check(author), timeout=45.0)
-        code = code.content
-    except asyncio.TimeoutError:
-        return await author.send("Sorry, you took too long too respond. Please reenter .valsignup2fa")
+    if res['type'] == 'multifactor':
+        await author.send(
+            "Check your email for your 2FA code. Respond with this code")
+        try:
+            code = await client.wait_for('message', check=check(author), timeout=45.0)
+            code = code.content
+        except asyncio.TimeoutError:
+            await author.send("Sorry, you took too long too respond. Please reenter .valsignup2fa")
 
-    vauth = val.auth2facode(author, client, code, session)
+
+    vauth = valBurrit.auth2facode(author, client, code, session)
+
+
+
     # check db
     data = {'username': username, 'valname': valname, 'password': password, 'authdata': vauth}
     if sqldb.checkDB(data):
@@ -374,7 +396,6 @@ async def valsignup2fa(ctx):
         return await author.send("You are now registered in the database!")
 
 
-
 @client.command()
 async def shop(ctx):
     author = ctx.author
@@ -382,34 +403,15 @@ async def shop(ctx):
     message = ctx.message.content
     valname = re.sub(r'(^.shop)', '', message).lstrip()
 
-    # kross and mark check cuz he sucks
-    # if (valname.lower() == 'empty'):
-    #
-    #     # countdown
-    #     count = 60
-    #     embed = discord.Embed(description=("Looks we got a nongamer here! Guess you're gonna have to wait on your shop bitch"))
-    #     embed.add_field(name='Timer', value=str(count))
-    #     mes = await channel.send(embed=embed)
-    #     count = count - 1
-    #     time.sleep(0.9)
-    #     for i in range(count, -1, -1):
-    #         embed2 = discord.Embed(description="Looks we got a nongamer here! Guess you're gonna have to wait on your shop bitch")
-    #         embed2.add_field(name='Timer', value=str(count))
-    #         count = count - 1
-    #         await mes.edit(embed=embed2)
-    #         time.sleep(0.9)
-        # await channel.send(embed=embed)
-
     if not (sqldb.checkDB({'valname': valname})):
         embed = discord.Embed(description=(valname.capitalize() + " is not registered in the database"))
         await channel.send(embed=embed)
 
     else:
-        dbinfo = sqldb.getDB({'valname': valname})
-        vshop = val.fetchStore(dbinfo)
+        dbinfo = sqldb.getDB({'valname': valname}, author, client)
+        vshop = await valBurrit.fetchStore(dbinfo)
 
         fskins = nskins = ''
-
         index = 0
         for names in vshop['feat']['names']:
             fskins = fskins + names + '\t\t ---- ' + str(vshop['feat']['prices'][index]) + ' VP' + '\n'
@@ -448,8 +450,8 @@ async def rank(ctx):
         await channel.send(embed=embed)
         return
     else:
-        dbinfo = sqldb.getDB({'valname': valname})
-        mmrdata = val.mmr(dbinfo)
+        dbinfo = sqldb.getDB({'valname': valname}, author, client)
+        mmrdata = await valBurrit.mmr(dbinfo)
 
         if mmrdata is False:
             embed = discord.Embed(description=(valname.capitalize()+ " has not played a competitive game this season"))
@@ -491,8 +493,8 @@ async def lastmatch(ctx):
         await channel.send(embed=embed)
         return
     else:
-        dbinfo = sqldb.getDB({'valname': valname})
-        lastmatch = val.lastMatch(dbinfo)
+        dbinfo = sqldb.getDB({'valname': valname}, author, client)
+        lastmatch = await valBurrit.lastMatch(dbinfo)
         # try:
         #     lastmatch = val.lastMatch(dbinfo)
         # except:
@@ -553,8 +555,8 @@ async def pastrank(ctx):
             return
         else:
             szn = seasons[index]['uuid']
-            dbinfo = sqldb.getDB({'valname': valname})
-            mmrdata = val.pastmmr(dbinfo,szn)
+            dbinfo = sqldb.getDB({'valname': valname}, author, client)
+            mmrdata = await valBurrit.pastmmr(dbinfo,szn)
 
             dec = Decimal(10) ** -2
             mmrtotal = mmrdata['wins'] + mmrdata['losses']
@@ -596,8 +598,8 @@ async def crosshair(ctx):
         await channel.send(embed=embed)
         return
     else:
-        dbinfo = sqldb.getDB({'valname': valname})
-        xhair = val.getXhair(dbinfo)
+        dbinfo = sqldb.getDB({'valname': valname}, author, client)
+        xhair = await valBurrit.getXhair(dbinfo)
         clr = xhair['color']
         xcolour = discord.colour.Color.from_rgb(clr['r'], clr['g'], clr['b'])
 
@@ -612,7 +614,7 @@ async def crosshair(ctx):
         await channel.send(embed=embed)
 
 
-@client.command()
+@client.command() 
 async def smurfing(ctx):
 
     author = ctx.author
@@ -639,9 +641,9 @@ async def smurfing(ctx):
         await channel.send(embed=embed)
         return
     else:
-        dataGetUser = sqldb.getDB({'valname': getUser})
-        dataSetUser = sqldb.getDB({'valname': setUser})
-        val.transferSettings(dataGetUser,dataSetUser)
+        dataGetUser = sqldb.getDB({'valname': getUser}, author, client)
+        dataSetUser = sqldb.getDB({'valname': setUser}, author, client)
+        await valBurrit.transferSettings(dataGetUser,dataSetUser)
         embed = discord.Embed(description=(getUser.capitalize() + "'s settings have been transfered to " + setUser.capitalize()) + "'s account.\n Happy Smurfing :)")
         await channel.send(embed=embed)
         return
@@ -659,15 +661,15 @@ async def matchRanks(ctx):
         await channel.send(embed=embed)
         return
     else:
-        dbinfo = sqldb.getDB({'valname': valname})
-        match = val.getMatch(dbinfo)
+        dbinfo = sqldb.getDB({'valname': valname}, author, client)
+        match = await valBurrit.getMatch(dbinfo)
         if (match == False):
             embed = discord.Embed(description=(valname.capitalize()+ " is not currently in a match"))
             await channel.send(embed=embed)
             return
 
-        users = val.getUsersInMatch(dbinfo,match)
-        agentRanks = val.getAgentRanksInMatch(dbinfo,users)
+        users = valBurrit.getUsersInMatch(dbinfo,match)
+        agentRanks = valBurrit.getAgentRanksInMatch(dbinfo,users)
 
         team1 = ''
         for player in agentRanks['Team1']:
@@ -726,4 +728,5 @@ async def stop(ctx):
     voice = discord.utils.get(client.voice_clients, guild=ctx.guild)
     await music.stop(ctx, voice, client)
 
-client.run('ODM4MTAzNjY5MzcwNjUwNzE1.YI2O3Q.Tuq8ZqrLshUVxyw0Qc2p6_nu-A4')
+if __name__ == '__main__':
+    client.run('ODM4MTAzNjY5MzcwNjUwNzE1.YI2O3Q.Tuq8ZqrLshUVxyw0Qc2p6_nu-A4')

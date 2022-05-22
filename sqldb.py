@@ -1,6 +1,5 @@
 # database stuff
 import sqlite3
-import val
 
 
 # conn = sqlite3.connect('../db/user.db')
@@ -97,7 +96,7 @@ def addDB(data):
     conn.close()
 
 
-def getDB(data):
+def getDB(data, author, client):
     # connect to DB
     conn = sqlite3.connect('db/user.db')
     curs = conn.cursor()
@@ -123,6 +122,8 @@ def getDB(data):
         'authdata': authdata,
         'username': check[0][0],
         'valname': valname,
-        'password': check[0][2]
+        'password': check[0][2],
+        'author': author,
+        'client': client,
     }
     return userdata

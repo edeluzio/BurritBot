@@ -7,13 +7,12 @@ from collections import OrderedDict
 from base64 import b64encode, b64decode
 import zlib
 import datetime
+# import nest_asyncio
+# nest_asyncio.apply()
+# __import__('IPython').embed()
 
 # auth stuff
-
-
-
-def auth(username, password):
-
+async def auth(username, password, author, client):
     answers = socket.getaddrinfo('auth.riotgames.com', 443)
     (family, type, proto, canonname, (address, port)) = answers[0]
 
@@ -41,6 +40,25 @@ def auth(username, password):
         'password': password
     }
     r = session.put(f'https://{address}/api/v1/authorization', json=data, headers=headers, verify=False)
+    res = r.json()
+
+    if res['type'] == 'multifactor':
+        import burritBot
+        # code = asyncio.create_task(burritBot.getCode(author))
+        r = asyncio.ensure_future(burritBot.getCode(author, session, address, client))
+        await r
+        r = r.result()
+        print()
+        print()
+        print()
+        # data = {
+        #         'type': 'multifactor',
+        #         # 'code': test2.result(),
+        #         'rememberDevice': False
+        #     }
+        # r = session.put(f'https://{address}/api/v1/authorization', json=data, headers=headers, verify=False)
+
+
     pattern = re.compile('access_token=((?:[a-zA-Z]|\d|\.|-|_)*).*id_token=((?:[a-zA-Z]|\d|\.|-|_)*).*expires_in=(\d*)')
     data = pattern.findall(r.json()['response']['parameters']['uri'])[0]
     access_token = data[0]
@@ -100,9 +118,13 @@ def auth2fa(username, password):
         'password': password
     }
     r = session.put(f'https://{address}/api/v1/authorization', json=data, headers=headers, verify=False)
+    res = r.json()
 
     ############## 2fa stuff here #################
-    return session
+    return [
+        session,
+        res,
+    ]
 
 def auth2facode(author, client, code, session):
     answers = socket.getaddrinfo('auth.riotgames.com', 443)
@@ -151,11 +173,9 @@ def auth2facode(author, client, code, session):
     }
 
 
-def clientinfo(userdata):
-
-    authdata = auth(userdata['username'], userdata['password'])
+async def clientinfo(authHeaders):
     # get client version
-    r = requests.get(f'https://valorant-api.com/v1/version', headers=authdata['headers'])
+    r = requests.get(f'https://valorant-api.com/v1/version', headers=authHeaders)
     version = r.json()
     num = version['data']['version']
     fnum = ''
@@ -173,14 +193,14 @@ def clientinfo(userdata):
     return client
 
 # val user stuff
-def fetchStore(userdata):
-    authdata = auth(userdata['username'], userdata['password'])
+async def fetchStore(userdata):
+    authdata = await auth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
 
     # Store Request
     r = requests.get(f'https://pd.na.a.pvp.net/store/v2/storefront/' + authdata['user_id'],headers=authdata['headers'])
     store = r.json()
 
-    cvers = clientinfo(userdata)
+    cvers = await clientinfo(authdata['headers'])
     authdata['headers'].update(cvers)
 
     # Content Request
@@ -336,10 +356,10 @@ def getLatestSzn():
         "actName": actName
     }
 
-def mmr(userdata):
+async def mmr(userdata):
 
-    authdata = auth(userdata['username'], userdata['password'])
-    cvers = clientinfo(userdata)
+    authdata = await auth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
+    cvers = await clientinfo(authdata['headers'])
     authdata['headers'].update(cvers)
     url = 'https://pd.na.a.pvp.net/mmr/v1/players/' + authdata['user_id']
     r = requests.get(url, headers=authdata['headers'])
@@ -458,9 +478,9 @@ def mmr(userdata):
     mmrdata['history10'] = history10
     return mmrdata
 
-def lastMatch(userdata):
-    authdata = auth(userdata['username'], userdata['password'])
-    cvers = clientinfo(userdata)
+async def lastMatch(userdata):
+    authdata = await auth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
+    cvers = await clientinfo(authdata['headers'])
     authdata['headers'].update(cvers)
 
     url = "https://pd.na.a.pvp.net/mmr/v1/players/" + authdata['user_id'] + "/competitiveupdates?startIndex=0&endIndex=1&queue=competitive"
@@ -501,9 +521,9 @@ def lastMatch(userdata):
             return matchData
 
 
-def pastmmr(userdata,szn):
-    authdata = auth(userdata['username'], userdata['password'])
-    cvers = clientinfo(userdata)
+async def pastmmr(userdata,szn):
+    authdata = await auth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
+    cvers = await clientinfo(authdata['headers'])
     authdata['headers'].update(cvers)
     url = 'https://pd.na.a.pvp.net/mmr/v1/players/' + authdata['user_id']
 
@@ -606,10 +626,10 @@ def getXhairSpec(settings):
 
     return xhair
 
-def getXhair(userdata):
+async def getXhair(userdata):
 
-    authdata = auth(userdata['username'], userdata['password'])
-    cvers = clientinfo(userdata)
+    authdata = await auth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
+    cvers = await clientinfo(authdata['headers'])
     authdata['headers'].update(cvers)
 
     url = 'https://playerpreferences.riotgames.com/playerPref/v3/getPreference/Ares.PlayerSettings'
@@ -629,14 +649,14 @@ def getXhair(userdata):
     # else:
     return getXhairNorm(settings)
 
-def transferSettings(dataGetUser,dataSetUser):
-    settings = getSettings(dataGetUser)
-    putSettings(dataSetUser, settings)
+async def transferSettings(dataGetUser,dataSetUser):
+    settings = await getSettings(dataGetUser)
+    await putSettings(dataSetUser, settings)
 
-def getSettings(userdata):
+async def getSettings(userdata):
 
-    authdata = auth(userdata['username'], userdata['password'])
-    cvers = clientinfo(userdata)
+    authdata = await auth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
+    cvers = await clientinfo(authdata['headers'])
     authdata['headers'].update(cvers)
     headers = authdata['headers']
 
@@ -645,19 +665,19 @@ def getSettings(userdata):
     response = r.json()
     return response
 
-def putSettings(userdata, settings):
+async def putSettings(userdata, settings):
 
-    authdata = auth(userdata['username'], userdata['password'])
-    cvers = clientinfo(userdata)
+    authdata = await auth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
+    cvers = await clientinfo(authdata['headers'])
     authdata['headers'].update(cvers)
     headers = authdata['headers']
 
     url = 'https://playerpreferences.riotgames.com/playerPref/v3/savePreference'
     r = requests.put(url,json=settings, headers=headers)
 
-def getMatch(userdata):
-    authdata = auth(userdata['username'], userdata['password'])
-    cvers = clientinfo(userdata)
+async def getMatch(userdata):
+    authdata = await auth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
+    cvers = await clientinfo(authdata['headers'])
     authdata['headers'].update(cvers)
     url = 'https://glz-na-1.na.a.pvp.net/core-game/v1/players/' + authdata['user_id']
 
@@ -670,9 +690,9 @@ def getMatch(userdata):
     match = match['MatchID']
     return match
 
-def getUsersInMatch(userdata,matchID):
-    authdata = auth(userdata['username'], userdata['password'])
-    cvers = clientinfo(userdata)
+async def getUsersInMatch(userdata,matchID):
+    authdata = await auth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
+    cvers = await clientinfo(authdata['headers'])
     authdata['headers'].update(cvers)
     url = 'https://glz-na-1.na.a.pvp.net/core-game/v1/matches/' + matchID
 
@@ -724,9 +744,9 @@ def getAgentRanksInMatch(userdata,playerlist):
 
     return ranklist
 
-def getAgents(userdata):
-    authdata = auth(userdata['username'], userdata['password'])
-    cvers = clientinfo(userdata)
+async def getAgents(userdata):
+    authdata = await auth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
+    cvers = await clientinfo(authdata['headers'])
     authdata['headers'].update(cvers)
     # url = 'https://shared.na.a.pvp.net/content-service/v2/content'
     url = 'https://valorant-api.com/v1/agents'
@@ -735,10 +755,10 @@ def getAgents(userdata):
     charlist = r.json()
     return charlist
 
-def getPlayerLoadout(userdata):
+async def getPlayerLoadout(userdata):
 
-    authdata = auth(userdata['username'], userdata['password'])
-    cvers = clientinfo(userdata)
+    authdata = await auth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
+    cvers = await clientinfo(authdata['headers'])
     authdata['headers'].update(cvers)
     url = 'https://pd.NA.a.pvp.net/personalization/v2/players/' + authdata['user_id'] + '/playerloadout'
 
@@ -746,10 +766,10 @@ def getPlayerLoadout(userdata):
     player = r.json()
     return player
 
-def getPlayerWeapons(userdata):
+async def getPlayerWeapons(userdata):
 
-    authdata = auth(userdata['username'], userdata['password'])
-    cvers = clientinfo(userdata)
+    authdata = await auth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
+    cvers = await clientinfo(authdata['headers'])
     authdata['headers'].update(cvers)
 
     url = 'https://pd.NA.a.pvp.net/store/v1/entitlements/' + authdata['user_id'] + '/e7c63390-eda7-46e0-bb7a-a6abdacd2433'
@@ -767,10 +787,10 @@ def getPlayerWeapons(userdata):
         'playerSkinLevels': playerSkinLevels
             }
 
-def getContentWeapons(userdata):
+async def getContentWeapons(userdata):
 
-    authdata = auth(userdata['username'], userdata['password'])
-    cvers = clientinfo(userdata)
+    authdata = await auth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
+    cvers = await clientinfo(authdata['headers'])
     authdata['headers'].update(cvers)
     r = requests.get(f'https://shared.na.a.pvp.net/content-service/v2/content', headers=authdata['headers'])
     weapons = r.json()
