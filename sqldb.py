@@ -20,6 +20,16 @@ import sqlite3
 # pw = 'password1'
 #
 
+def checkName(valname):
+    conn = sqlite3.connect('db/user.db')
+    curs = conn.cursor()
+    check = curs.execute("SELECT * FROM users WHERE valname=:valname COLLATE NOCASE", {'valname': valname})
+    check = curs.fetchall()
+    conn.commit()
+    conn.close()
+    if len(check) == 0:
+        return False
+    return True
 
 def delDB(valname):
     conn = sqlite3.connect('db/user.db')

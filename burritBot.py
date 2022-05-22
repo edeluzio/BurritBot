@@ -1,5 +1,6 @@
 from decimal import Decimal
 from datetime import datetime
+import sqlite3
 from discord.ext import commands
 from bs4 import BeautifulSoup
 import requests, pytz, discord, re, json, random, time, sqldb, asyncio, valBurrit, music, traceback
@@ -34,7 +35,41 @@ def get_rot(title):
 async def on_ready():
     print("Bot is ready")
 
+########################################################   GENERAL COMMANDS   ################################################################################
 
+
+@client.command()
+async def removeUser(ctx):
+    author = ctx.author
+    channel = ctx.channel
+    message = ctx.message.content
+    user = re.sub(r'(^.removeUser)', '', message).lstrip()
+
+    if sqldb.checkName(user) is False:
+         return await channel.send(f"{user} is not currently registered in the database!. Use command .users to see the database")
+    else:
+        sqldb.delDB(user)
+        return await channel.send(f"{user} succesfully deleted from the database!")
+
+
+@client.command()
+async def users(ctx):
+    author = ctx.author
+    channel = ctx.channel
+    message = ctx.message.content
+
+    embed = discord.Embed(title='Users Currently Registered')
+    embed.add_field(name='Database ID', value=sqldb.getAll())
+    await channel.send(embed=embed)
+
+
+@client.command()
+async def burhelp(ctx):
+    user = ctx.author
+    await user.create_dm()
+
+
+##########################################################   MOVIE COMMANDS   ################################################################################
 @client.command()
 async def update(ctx):
     channel = discord.utils.get(ctx.guild.channels, name="burrit-cinemas-ratings")
@@ -255,11 +290,7 @@ async def randmov(ctx):
     await channel.send(embed=win)
 
 
-@client.command()
-async def burhelp(ctx):
-    user = ctx.author
-    await user.create_dm()
-
+############################################################   VAL COMMANDS   ################################################################################
 
 @client.command()
 async def valsignup(ctx):
@@ -293,12 +324,9 @@ async def valsignup(ctx):
     except asyncio.TimeoutError:
         return await author.send("Sorry, you took too long too respond. Please reenter .valsignup")
 
-    # check if val acc/ get val auth stuff
-    try:
-        vauth = valBurrit.auth(username, password, author, client)
-    except:
-        errmsg = "The username: " + username + " and password: " + password + " is not associated with a Riot account. Please reenter .valsignup"
-        await author.send(errmsg)
+    # check if val acc/ get val auth stuff. if vauth is a string, then its an error code (as on may 2022), and responses are handled inside auth
+    vauth = await valBurrit.auth(username, password, author, client)
+    if isinstance(vauth, str):
         return
 
     # check db
@@ -317,83 +345,19 @@ async def valsignup(ctx):
 
 async def getCode(author, session, address, client):
     await author.send("You just used a burrit command: Check your email for your 2FA code, and respond with this code")
-    code = await client.wait_for('message', check=check(author), timeout=45.0)
-    code = code.content
+    code = await client.wait_for('message', check=check(author), timeout=60.0)
     await author.send('Code recieved')
-    try:
-        data = {
-                'type': 'multifactor',
-                'code': code,
-                'rememberDevice': False
-            }
-        r = session.put(f'https://{address}/api/v1/authorization', json=data, headers=session.headers, verify=False)
-        return r
-    except asyncio.TimeoutError:
-        await author.send("Sorry, you took too long too respond. Please reenter the command")
-
-
-@client.command()
-async def valsignup2fa(ctx):
-    author = ctx.author
-    channel = ctx.channel
-    message = ctx.message
-
-    await author.send(
-        "Welcome to the Valorant x Burrit database signup.\nOnce signed up, other users can do things like view your shop, MMR, and many more things to come!")
-
-    await author.send("First, respond with your Valorant username (without the #NA1).")
-    try:
-        valname = await client.wait_for('message', check=check(author), timeout=30.0)
-        valname = valname.content
-    except asyncio.TimeoutError:
-        return await author.send("Sorry, you took too long too respond. Please reenter .valsignup2fa")
-
-    await author.send("Next, respond with your Riot username.")
-    try:
-        username = await client.wait_for('message', check=check(author), timeout=30.0)
-        username = username.content
-    except asyncio.TimeoutError:
-        return await author.send("Sorry, you took too long too respond. Please reenter .valsignup2fa")
-
-
-    await author.send(
-        "Next, respond with your Valorant password.\nYour password will NOT be saved to the database, but is needed to obtain authorization headers for HTTP requests. You are also free to delete these messages after responding with your password")
-    try:
-        password = await client.wait_for('message', check=check(author), timeout=30.0)
-        password = password.content
-    except asyncio.TimeoutError:
-        return await author.send("Sorry, you took too long too respond. Please reenter .valsignup2fa")
-
-    session, res = valBurrit.auth2fa(username, password)
-
-    # check if val acc/ get val auth stuff
-    if res['type'] == 'multifactor':
-        await author.send(
-            "Check your email for your 2FA code. Respond with this code")
-        try:
-            code = await client.wait_for('message', check=check(author), timeout=45.0)
-            code = code.content
-        except asyncio.TimeoutError:
-            await author.send("Sorry, you took too long too respond. Please reenter .valsignup2fa")
-
-
-    vauth = valBurrit.auth2facode(author, client, code, session)
-
-
-
-    # check db
-    data = {'username': username, 'valname': valname, 'password': password, 'authdata': vauth}
-    if sqldb.checkDB(data):
-        errmsg = "This user has already signed up in the database"
-        await author.send(errmsg)
-        return
-
-    # add to db
+    data = {
+            'type': 'multifactor',
+            'code': code.content,
+            'rememberDevice': False
+        }
+    r = session.put(f'https://{address}/api/v1/authorization', json=data, headers=session.headers, verify=False)
+    if 'error' in r.json():
+        await author.send("2FA code failed. Please reenter the command.")
+        return False
     else:
-        sqldb.addDB(data)
-
-        # say congrats
-        return await author.send("You are now registered in the database!")
+        return r
 
 
 @client.command()
@@ -575,17 +539,6 @@ async def pastrank(ctx):
 
 
 @client.command()
-async def users(ctx):
-    author = ctx.author
-    channel = ctx.channel
-    message = ctx.message.content
-
-    embed = discord.Embed(title='Users Currently Registered')
-    embed.add_field(name='Database ID', value=sqldb.getAll())
-    await channel.send(embed=embed)
-
-
-@client.command()
 async def crosshair(ctx):
 
     author = ctx.author
@@ -684,6 +637,7 @@ async def matchRanks(ctx):
         embed.add_field(name='Team 2', value=team2, inline=False)
         await channel.send(embed=embed)
 
+#####################################################   MUSIC COMMANDS   ################################################################################
 
 @client.command()
 async def play(ctx, *, query):
