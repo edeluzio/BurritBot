@@ -35,22 +35,49 @@ def get_rot(title):
 async def on_ready():
     print("Bot is ready")
 
-########################################################   GENERAL COMMANDS   ################################################################################
+@client.event
+async def on_voice_state_update(member, before, after):
+    print('hello')
+    print('hello')
+    print('hello')
 
+########################################################   GENERAL COMMANDS   ################################################################################
+@client.command()
+async def usersignup(ctx):
+    author = ctx.author
+    channel = ctx.channel
+    message = ctx.message
+
+    await author.send(
+        "Welcome to the Burrit user database signup.\n")
+
+    await author.send("Respond with your username. This can be whatever you choose, and is more like a nickname")
+    try:
+        username = await client.wait_for('message', check=check(author), timeout=30.0)
+        username = username.content
+    except asyncio.TimeoutError:
+        return await author.send("Sorry, you took too long too respond. Please reenter .usersignup")
+
+    data = {'username': username, 'discordId': author.id,}
+    if sqldb.checkInUsers(data):
+        return await author.send("This user has already signed up in the database")
+
+    else:
+        sqldb.addUser(data)
+        return await author.send("You are now registered in the user database!")
 
 @client.command()
 async def removeUser(ctx):
     author = ctx.author
     channel = ctx.channel
     message = ctx.message.content
-    user = re.sub(r'(^.removeUser)', '', message).lstrip()
+    username = re.sub(r'(^.removeUser)', '', message).lstrip()
 
-    if sqldb.checkName(user) is False:
-         return await channel.send(f"{user} is not currently registered in the database!. Use command .users to see the database")
+    if sqldb.checkNameInUsers(username) is False:
+         return await channel.send(f"{username} is not currently registered in the database!. Use command .users to see the database")
     else:
-        sqldb.delDB(user)
-        return await channel.send(f"{user} succesfully deleted from the database!")
-
+        sqldb.delUser(username)
+        return await channel.send(f"{username} succesfully deleted from the database!")
 
 @client.command()
 async def users(ctx):
@@ -59,15 +86,13 @@ async def users(ctx):
     message = ctx.message.content
 
     embed = discord.Embed(title='Users Currently Registered')
-    embed.add_field(name='Database ID', value=sqldb.getAll())
+    embed.add_field(name='Database username', value=sqldb.getAllUsers())
     await channel.send(embed=embed)
-
 
 @client.command()
 async def burhelp(ctx):
     user = ctx.author
     await user.create_dm()
-
 
 ##########################################################   MOVIE COMMANDS   ################################################################################
 @client.command()
@@ -175,7 +200,6 @@ async def update(ctx):
     upd.add_field(name='Current Rankings', value=ranks, inline='false')
     await channel.send(embed=upd)
 
-
 @client.command()
 async def addmov(ctx):
     channel = discord.utils.get(ctx.guild.channels, name="movie-vote")
@@ -195,13 +219,11 @@ async def addmov(ctx):
 
     await channel.send(embed=final)
 
-
 @client.command()
 async def clearmov(ctx):
     channel = discord.utils.get(ctx.guild.channels, name="movie-vote")
     await channel.purge(limit=100)
     poll.clear()
-
 
 @client.command()
 async def votemov(ctx):
@@ -263,7 +285,6 @@ async def votemov(ctx):
     win = discord.Embed(description='BurritCinemas is pleased to present to you:\n\n' + movie)
     await channel.send(embed=win)
 
-
 @client.command()
 async def randmov(ctx):
     channel = discord.utils.get(ctx.guild.channels, name="movie-vote")
@@ -289,9 +310,7 @@ async def randmov(ctx):
     win = discord.Embed(title='BurritCinemas is pleased to present to you:\n\n' + movie)
     await channel.send(embed=win)
 
-
 ############################################################   VAL COMMANDS   ################################################################################
-
 @client.command()
 async def valsignup(ctx):
     author = ctx.author
@@ -331,17 +350,40 @@ async def valsignup(ctx):
 
     # check db
     data = {'username': username, 'valname': valname, 'password': password, 'authdata': vauth}
-    if sqldb.checkDB(data):
+    if sqldb.checkInValUsers(data):
         errmsg = "This user has already signed up in the database"
         await author.send(errmsg)
         return
 
     # add to db
     else:
-        sqldb.addDB(data)
+        sqldb.addValUser(data)
 
         # say congrats
         return await author.send("You are now registered in the database!")
+
+@client.command()
+async def removeValUser(ctx):
+    author = ctx.author
+    channel = ctx.channel
+    message = ctx.message.content
+    user = re.sub(r'(^.removeValUser)', '', message).lstrip()
+
+    if sqldb.checkNameInValUsers(user) is False:
+         return await channel.send(f"{user} is not currently registered in the database!. Use command .users to see the database")
+    else:
+        sqldb.delValUser(user)
+        return await channel.send(f"{user} succesfully deleted from the database!")
+
+@client.command()
+async def valUsers(ctx):
+    author = ctx.author
+    channel = ctx.channel
+    message = ctx.message.content
+
+    embed = discord.Embed(title='Users Currently Registered')
+    embed.add_field(name='Database ID', value=sqldb.getAllValUsers())
+    await channel.send(embed=embed)
 
 async def getCode(author, session, address, client):
     await author.send("You just used a burrit command: Check your email for your 2FA code, and respond with this code")
@@ -359,7 +401,6 @@ async def getCode(author, session, address, client):
     else:
         return r
 
-
 @client.command()
 async def shop(ctx):
     author = ctx.author
@@ -367,12 +408,12 @@ async def shop(ctx):
     message = ctx.message.content
     valname = re.sub(r'(^.shop)', '', message).lstrip()
 
-    if not (sqldb.checkDB({'valname': valname})):
+    if not (sqldb.checkInValUsers({'valname': valname})):
         embed = discord.Embed(description=(valname.capitalize() + " is not registered in the database"))
         await channel.send(embed=embed)
 
     else:
-        dbinfo = sqldb.getDB({'valname': valname}, author, client)
+        dbinfo = sqldb.getValUser({'valname': valname}, author, client)
         vshop = await valBurrit.fetchStore(dbinfo)
 
         fskins = nskins = ''
@@ -400,7 +441,6 @@ async def shop(ctx):
         embed.add_field(name='Night Shop', value=bskins or "You currently have no Night Shop", inline=False)
         await channel.send(embed=embed)
 
-
 @client.command()
 async def rank(ctx):
 
@@ -409,12 +449,12 @@ async def rank(ctx):
     message = ctx.message.content
     valname = re.sub(r'(^.rank)', '', message).lstrip()
 
-    if not (sqldb.checkDB({'valname': valname})):
+    if not (sqldb.checkInValUsers({'valname': valname})):
         embed = discord.Embed(description=(valname.capitalize()+ " is not registered in the database"))
         await channel.send(embed=embed)
         return
     else:
-        dbinfo = sqldb.getDB({'valname': valname}, author, client)
+        dbinfo = sqldb.getValUser({'valname': valname}, author, client)
         mmrdata = await valBurrit.mmr(dbinfo)
 
         if mmrdata is False:
@@ -452,12 +492,12 @@ async def lastmatch(ctx):
     message = ctx.message.content
     valname = re.sub(r'(^.lastmatch)', '', message).lstrip()
 
-    if not (sqldb.checkDB({'valname': valname})):
+    if not (sqldb.checkInValUsers({'valname': valname})):
         embed = discord.Embed(description=(valname.capitalize() + " is not registered in the database"))
         await channel.send(embed=embed)
         return
     else:
-        dbinfo = sqldb.getDB({'valname': valname}, author, client)
+        dbinfo = sqldb.getValUser({'valname': valname}, author, client)
         lastmatch = await valBurrit.lastMatch(dbinfo)
         # try:
         #     lastmatch = val.lastMatch(dbinfo)
@@ -475,7 +515,6 @@ async def lastmatch(ctx):
         embed.add_field(name='Result', value=lastmatch['result'], inline=False)
         embed.add_field(name='Elo Gain/Loss', value=lastmatch['elo'], inline=False)
         await channel.send(embed=embed)
-
 
 @client.command()
 async def pastrank(ctx):
@@ -513,13 +552,13 @@ async def pastrank(ctx):
         print()
 
     else:
-        if not (sqldb.checkDB({'valname': valname})):
+        if not (sqldb.checkInValUsers({'valname': valname})):
             embed = discord.Embed(description=(valname + " is not registered in the database"))
             await channel.send(embed=embed)
             return
         else:
             szn = seasons[index]['uuid']
-            dbinfo = sqldb.getDB({'valname': valname}, author, client)
+            dbinfo = sqldb.getValUser({'valname': valname}, author, client)
             mmrdata = await valBurrit.pastmmr(dbinfo,szn)
 
             dec = Decimal(10) ** -2
@@ -537,7 +576,6 @@ async def pastrank(ctx):
 
             await channel.send(embed=embed)
 
-
 @client.command()
 async def crosshair(ctx):
 
@@ -546,12 +584,12 @@ async def crosshair(ctx):
     message = ctx.message.content
     valname = re.sub(r'(^.crosshair)', '', message).lstrip()
 
-    if not (sqldb.checkDB({'valname': valname})):
+    if not (sqldb.checkInValUsers({'valname': valname})):
         embed = discord.Embed(description=(valname.capitalize()+ " is not registered in the database"))
         await channel.send(embed=embed)
         return
     else:
-        dbinfo = sqldb.getDB({'valname': valname}, author, client)
+        dbinfo = sqldb.getValUser({'valname': valname}, author, client)
         xhair = await valBurrit.getXhair(dbinfo)
         clr = xhair['color']
         xcolour = discord.colour.Color.from_rgb(clr['r'], clr['g'], clr['b'])
@@ -565,7 +603,6 @@ async def crosshair(ctx):
         embed.add_field(name='Outer Lines', value=outer, inline=False)
         embed.add_field(name='Mouse Sensitivity', value=xhair['sens'], inline=False)
         await channel.send(embed=embed)
-
 
 @client.command() 
 async def smurfing(ctx):
@@ -584,23 +621,22 @@ async def smurfing(ctx):
     getUser = valnames[0].lstrip()
     setUser = valnames[1].lstrip()
 
-    if not (sqldb.checkDB({'valname': getUser})):
+    if not (sqldb.checkInValUsers({'valname': getUser})):
         embed = discord.Embed(description=(getUser.capitalize()+ " is not registered in the database"))
         await channel.send(embed=embed)
         return
 
-    if not (sqldb.checkDB({'valname': setUser})):
+    if not (sqldb.checkInValUsers({'valname': setUser})):
         embed = discord.Embed(description=(setUser.capitalize()+ " is not registered in the database"))
         await channel.send(embed=embed)
         return
     else:
-        dataGetUser = sqldb.getDB({'valname': getUser}, author, client)
-        dataSetUser = sqldb.getDB({'valname': setUser}, author, client)
+        dataGetUser = sqldb.getValUser({'valname': getUser}, author, client)
+        dataSetUser = sqldb.getValUser({'valname': setUser}, author, client)
         await valBurrit.transferSettings(dataGetUser,dataSetUser)
         embed = discord.Embed(description=(getUser.capitalize() + "'s settings have been transfered to " + setUser.capitalize()) + "'s account.\n Happy Smurfing :)")
         await channel.send(embed=embed)
         return
-
 
 @client.command()
 async def matchRanks(ctx):
@@ -609,12 +645,12 @@ async def matchRanks(ctx):
     message = ctx.message.content
     valname = re.sub(r'(^.matchRanks)', '', message).lstrip()
 
-    if not (sqldb.checkDB({'valname': valname})):
+    if not (sqldb.checkInValUsers({'valname': valname})):
         embed = discord.Embed(description=(valname.capitalize()+ " is not registered in the database"))
         await channel.send(embed=embed)
         return
     else:
-        dbinfo = sqldb.getDB({'valname': valname}, author, client)
+        dbinfo = sqldb.getValUser({'valname': valname}, author, client)
         match = await valBurrit.getMatch(dbinfo)
         if (match == False):
             embed = discord.Embed(description=(valname.capitalize()+ " is not currently in a match"))
@@ -662,7 +698,6 @@ async def play(ctx, *, query):
     except Exception as e:
          print(traceback.format_exc())
 
-
 @client.command()
 async def skip(ctx):
 
@@ -671,7 +706,6 @@ async def skip(ctx):
     message = ctx.message.content
     voice = discord.utils.get(client.voice_clients, guild=ctx.guild)
     await music.skip(ctx, voice, client)
-
 
 @client.command()
 async def stop(ctx):
