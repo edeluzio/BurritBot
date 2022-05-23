@@ -1,5 +1,7 @@
 # database stuff
 import sqlite3
+import datetime
+
 
 ##################################################### Other DB ######################################################
 def dbinit():
@@ -9,18 +11,20 @@ def dbinit():
 
     curs.execute("""CREATE TABLE users (
                     username text,
-                    discordId text
-                    )""")
+                    discordId text,
+                    lastJoinedVC INT DEFAULT 0,
+                    lastLeftVC INT DEFAULT 0,
+                    totalTimeVC INT DEFAULT 0)""")
 
 
-    curs.execute("""CREATE TABLE valUsers (
-                    username text,
-                    valname text,
-                    password text,
-                    entitlements text,
-                    authorization text,
-                    user_id text
-                    )""")
+    # curs.execute("""CREATE TABLE valUsers (
+    #                 username text,
+    #                 valname text,
+    #                 password text,
+    #                 entitlements text,
+    #                 authorization text,
+    #                 user_id text
+    #                 )""")
 
 ##################################################### User DB ######################################################
 def addUser(data):
@@ -32,7 +36,7 @@ def addUser(data):
     discordId = data['discordId']
 
     # add to db
-    curs.execute("INSERT INTO users VALUES (:username, :discordId)",
+    curs.execute("INSERT INTO users (username, discordId) VALUES (:username, :discordId)",
                  {'username': username, 'discordId': discordId})
 
     # close db
@@ -46,22 +50,23 @@ def delUser(username):
     conn.commit()
     conn.close()
 
-def getUser(data):
+def getUser(username):
     # connect to DB
-    data['username'] = 'starkazor'
     conn = sqlite3.connect('db/burrit.db')
     curs = conn.cursor()
 
-    if not (checkInUsers(data)):
+    if not (checkInUsers(username)):
         return False
 
     # get data and return in dictionary
-    username = data['username']
     check = curs.execute("SELECT * FROM users WHERE username=:username COLLATE NOCASE", {'username': username})
     check = curs.fetchall()
     userdata = {
         'username': check[0][0],
         'discordId': check[0][1],
+        'lastJoinedVC': check[0][2],
+        'lastLeftVC': check[0][3],
+        'totalTimeVC': check[0][4],
     }
 
     return userdata
@@ -90,12 +95,11 @@ def checkNameInUsers(username):
         return False
     return True
 
-def checkInUsers(data):
+def checkInUsers(username):
     # connect to DB
     conn = sqlite3.connect('db/burrit.db')
     curs = conn.cursor()
 
-    username = data['username']
     curs.execute("SELECT * FROM users WHERE username=:username COLLATE NOCASE", {'username': username})
     check = curs.fetchall()
 
@@ -104,6 +108,49 @@ def checkInUsers(data):
     else:
         return True
 
+def updateLastJoined(discordId, joinTime):
+    conn = sqlite3.connect('db/burrit.db')
+    curs = conn.cursor()
+    curs.execute("UPDATE users SET lastJoinedVC=:joinTime WHERE discordId=:discordId COLLATE NOCASE", {'joinTime': joinTime,'discordId': discordId})
+    conn.commit()
+    conn.close()
+
+def updateLastLeft(discordId, leftTime):
+    conn = sqlite3.connect('db/burrit.db')
+    curs = conn.cursor()
+    curs.execute("UPDATE users SET lastLeftVC=:leftTime WHERE discordId=:discordId COLLATE NOCASE", {'leftTime': leftTime,'discordId': discordId})
+    conn.commit()
+    conn.close()
+
+def updateTotalTime(discordId):
+    conn = sqlite3.connect('db/burrit.db')
+    curs = conn.cursor()
+    check = curs.execute("SELECT * FROM users WHERE discordId=:discordId COLLATE NOCASE", {'discordId': discordId})
+    check = curs.fetchall()
+    username = check[0][0]
+
+    userDbInfo = getUser(username)
+    elapsedTime = userDbInfo['lastLeftVC'] - userDbInfo['lastJoinedVC']
+    newTotalTime = userDbInfo['totalTimeVC'] + elapsedTime
+
+    print()
+    curs.execute("UPDATE users SET totalTimeVC=:newTotalTime WHERE discordId=:discordId COLLATE NOCASE", {'newTotalTime': newTotalTime,'discordId': discordId})
+    conn.commit()
+    conn.close()
+
+def getAllUserTimes():
+    conn = sqlite3.connect('db/burrit.db')
+    curs = conn.cursor()
+
+    curs.execute("SELECT username, totalTimeVC FROM users")
+    check = curs.fetchall()
+
+    userlist = ''
+    for users in check:
+        totalTime = str(datetime.timedelta(seconds=users[1]))
+        userlist = userlist + users[0] + ":     %s" % str(totalTime).split('.')[0]
+
+    return userlist
 
 ##################################################### Val DB ######################################################
 

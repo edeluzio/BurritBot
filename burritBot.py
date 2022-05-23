@@ -37,9 +37,19 @@ async def on_ready():
 
 @client.event
 async def on_voice_state_update(member, before, after):
-    print('hello')
-    print('hello')
-    print('hello')
+
+    # joining channel
+    if before.channel is None and after.channel is not None:
+        joinTime = time.time()
+        sqldb.updateLastJoined(member.id, joinTime)
+
+    # leaving channel
+    elif before.channel is not None and after.channel is None:
+        leftTime = time.time()
+        sqldb.updateLastLeft(member.id, leftTime)
+
+        # update db to get total time
+        sqldb.updateTotalTime(member.id)
 
 ########################################################   GENERAL COMMANDS   ################################################################################
 @client.command()
@@ -59,7 +69,7 @@ async def usersignup(ctx):
         return await author.send("Sorry, you took too long too respond. Please reenter .usersignup")
 
     data = {'username': username, 'discordId': author.id,}
-    if sqldb.checkInUsers(data):
+    if sqldb.checkInUsers(data['username']):
         return await author.send("This user has already signed up in the database")
 
     else:
@@ -87,6 +97,16 @@ async def users(ctx):
 
     embed = discord.Embed(title='Users Currently Registered')
     embed.add_field(name='Database username', value=sqldb.getAllUsers())
+    await channel.send(embed=embed)
+
+@client.command()
+async def userVoiceTimes(ctx):
+    author = ctx.author
+    channel = ctx.channel
+    message = ctx.message.content
+
+    embed = discord.Embed(title='Users Currently Registered')
+    embed.add_field(name='Database username', value=sqldb.getAllUserTimes())
     await channel.send(embed=embed)
 
 @client.command()
