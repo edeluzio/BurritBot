@@ -148,7 +148,7 @@ def getAllUserTimes():
     userlist = ''
     for users in check:
         totalTime = str(datetime.timedelta(seconds=users[1]))
-        userlist = userlist + users[0] + ":     %s" % str(totalTime).split('.')[0]
+        userlist = userlist + users[0] + ":     %s" % str(totalTime).split('.')[0] + '\n'
 
     return userlist
 
