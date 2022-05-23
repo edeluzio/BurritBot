@@ -140,13 +140,16 @@ def updateTotalTime(discordId):
     conn.commit()
     conn.close()
 
+def takeSecond(users):
+        return users[1]
+
 def getAllUserTimes():
     conn = sqlite3.connect('db/burrit.db')
     curs = conn.cursor()
 
     curs.execute("SELECT username, totalTimeVC FROM users")
     check = curs.fetchall()
-
+    check.sort(key=takeSecond, reverse=True)
     userlist = ''
     for users in check:
         totalTime = str(datetime.timedelta(seconds=users[1]))
