@@ -128,8 +128,10 @@ def updateTotalTime(discordId):
     check = curs.execute("SELECT * FROM users WHERE discordId=:discordId COLLATE NOCASE", {'discordId': discordId})
     check = curs.fetchall()
     username = check[0][0]
-
     userDbInfo = getUser(username)
+
+    if userDbInfo['lastJoinedVC'] == 0:
+        return
     elapsedTime = userDbInfo['lastLeftVC'] - userDbInfo['lastJoinedVC']
     newTotalTime = userDbInfo['totalTimeVC'] + elapsedTime
 
