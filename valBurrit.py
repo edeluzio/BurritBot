@@ -7,11 +7,36 @@ from collections import OrderedDict
 from base64 import b64encode, b64decode
 import zlib
 import datetime
-# import nest_asyncio
-# nest_asyncio.apply()
-# __import__('IPython').embed()
+import sys
+import riot_auth
+
+userAgent = "RiotClient/58.0.0.4640299.4552318 rso-auth (Windows;10;;Professional, x64)"
 
 # auth stuff
+async def floxayAuth(username, password):
+    # region asyncio.run() bug workaround for Windows, remove below 3.8 and above 3.10.6
+    if sys.platform == "win32":
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    # endregion
+
+    CREDS = username, password
+    auth = riot_auth.RiotAuth()
+    await auth.authorize(*CREDS)
+
+    # Reauth using cookies. Returns a bool indicating whether the reauth attempt was successful.
+    await auth.reauthorize()
+
+    userid = auth.user_id
+    headers= {
+        'Accept-Encoding': 'gzip, deflate, br',
+        'User-Agent': auth.RIOT_CLIENT_USER_AGENT,
+        'Authorization': f'Bearer {auth.access_token}',
+        'X-Riot-Entitlements-JWT': auth.entitlements_token
+    }
+
+    return [userid, headers]
+
+
 async def auth(username, password, author, client):
     answers = socket.getaddrinfo('auth.riotgames.com', 443)
     (family, type, proto, canonname, (address, port)) = answers[0]
@@ -19,7 +44,7 @@ async def auth(username, password, author, client):
     headers = OrderedDict({
         'Accept-Encoding': 'gzip, deflate, br',
         'Host': "auth.riotgames.com",
-        'User-Agent': 'RiotClient/43.0.1.4195386.4190634 rso-auth (Windows;10;;Professional, x64)'
+        'User-Agent': userAgent,
     })
 
     session = requests.session()
@@ -33,7 +58,6 @@ async def auth(username, password, author, client):
     }
     r = session.post(f'https://{address}/api/v1/authorization', json=data, headers=headers, verify=False)
 
-    # print(r.text)
     data = {
         'type': 'auth',
         'username': username,
@@ -62,7 +86,7 @@ async def auth(username, password, author, client):
     headers = {
         'Accept-Encoding': 'gzip, deflate, br',
         'Host': "entitlements.auth.riotgames.com",
-        'User-Agent': 'RiotClient/43.0.1.4195386.4190634 rso-auth (Windows;10;;Professional, x64)',
+        'User-Agent': userAgent,
         'Authorization': f'Bearer {access_token}',
     }
     r = session.post('https://entitlements.auth.riotgames.com/api/token/v1', headers=headers, json={})
@@ -72,7 +96,7 @@ async def auth(username, password, author, client):
     headers = {
         'Accept-Encoding': 'gzip, deflate, br',
         'Host': "auth.riotgames.com",
-        'User-Agent': 'RiotClient/43.0.1.4195386.4190634 rso-auth (Windows;10;;Professional, x64)',
+        'User-Agent': userAgent,
         'Authorization': f'Bearer {access_token}',
     }
 
@@ -94,7 +118,7 @@ def auth2fa(username, password):
     headers = OrderedDict({
         'Accept-Encoding': 'gzip, deflate, br',
         'Host': "auth.riotgames.com",
-        'User-Agent': 'RiotClient/43.0.1.4195386.4190634 rso-auth (Windows;10;;Professional, x64)'
+        'User-Agent': userAgent
     })
     session = requests.session()
     session.headers = headers
@@ -189,19 +213,20 @@ async def clientinfo(authHeaders):
 
 # val user stuff
 async def fetchStore(userdata):
-    authdata = await auth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
-    if authdata is False:
+    userid, headers = await floxayAuth(userdata['username'], userdata['password'])
+
+    if userid is False:
         return
 
     # Store Request
-    r = requests.get(f'https://pd.na.a.pvp.net/store/v2/storefront/' + authdata['user_id'],headers=authdata['headers'])
+    r = requests.get(f'https://pd.na.a.pvp.net/store/v2/storefront/' + userid, headers=headers)
     store = r.json()
 
-    cvers = await clientinfo(authdata['headers'])
-    authdata['headers'].update(cvers)
+    cvers = await clientinfo(headers)
+    headers.update(cvers)
 
     # Content Request
-    r = requests.get(f'https://valorant-api.com/v1/weapons/skinchromas', headers=authdata['headers'])
+    r = requests.get(f'https://valorant-api.com/v1/weapons/skinchromas', headers=headers)
     data = r.json()
 
     featuredlength = store['FeaturedBundle']['Bundle']['Items'].__len__()
@@ -224,11 +249,11 @@ async def fetchStore(userdata):
     bprices = []
 
     #get daily shop prices
-    r = requests.get('https://pd.na.a.pvp.net/store/v1/offers/', headers=authdata['headers'])
+    r = requests.get('https://pd.na.a.pvp.net/store/v1/offers/', headers=headers)
     dailyprice = r.json()
 
     # get the asset pack
-    r = requests.get(f'https://valorant-api.com/v1/weapons', headers=authdata['headers'])
+    r = requests.get(f'https://valorant-api.com/v1/weapons', headers=headers)
     assets = r.json()
 
     # get featured store ids and names
@@ -354,14 +379,15 @@ def getLatestSzn():
     }
 
 async def mmr(userdata):
+    userid, headers = await floxayAuth(userdata['username'], userdata['password'])
 
-    authdata = await auth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
-    if authdata is False:
+    if userid is False:
         return
-    cvers = await clientinfo(authdata['headers'])
-    authdata['headers'].update(cvers)
-    url = 'https://pd.na.a.pvp.net/mmr/v1/players/' + authdata['user_id']
-    r = requests.get(url, headers=authdata['headers'])
+
+    cvers = await clientinfo(headers)
+    headers.update(cvers)
+    url = 'https://pd.na.a.pvp.net/mmr/v1/players/' + userid
+    r = requests.get(url, headers=headers)
     rating = r.json()
 
     seasonInfo = getLatestSzn()
@@ -394,10 +420,9 @@ async def mmr(userdata):
                     mmrdata['rank'] = ranks['tierName']
                     break
 
-    url = "https://pd.na.a.pvp.net/mmr/v1/players/" + authdata['user_id'] + "/competitiveupdates?startIndex=0&queue=competitive"
-    r = requests.get(url, headers=authdata['headers'])
+    url = "https://pd.na.a.pvp.net/mmr/v1/players/" + userid + "/competitiveupdates?startIndex=0&queue=competitive"
+    r = requests.get(url, headers=headers)
     matches = r.json()
-    print()
 
     # last 10 history
     games = 0
@@ -414,13 +439,12 @@ async def mmr(userdata):
             continue
         # get game info
         url = "https://pd.na.a.pvp.net/match-details/v1/matches/" + match['MatchID']
-        r = requests.get(url, headers=authdata['headers'])
+        r = requests.get(url, headers=headers)
         gameinfo = r.json()
-        print()
         # check make sure its ranked game
         # get player team
         for player in gameinfo['players']:
-            if player['subject'].lower() == authdata['user_id'].lower():
+            if player['subject'].lower() == userid.lower():
                 pteam = player['teamId']
                 break
         # check if win or loss
@@ -478,24 +502,25 @@ async def mmr(userdata):
     return mmrdata
 
 async def lastMatch(userdata):
-    authdata = await auth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
-    if authdata is False:
-        return
-    cvers = await clientinfo(authdata['headers'])
-    authdata['headers'].update(cvers)
+    userid, headers = await floxayAuth(userdata['username'], userdata['password'])
 
-    url = "https://pd.na.a.pvp.net/mmr/v1/players/" + authdata['user_id'] + "/competitiveupdates?startIndex=0&endIndex=1&queue=competitive"
-    r = requests.get(url, headers=authdata['headers'])
+    if userid is False:
+        return
+    cvers = await clientinfo(headers)
+    headers.update(cvers)
+
+    url = "https://pd.na.a.pvp.net/mmr/v1/players/" + userid + "/competitiveupdates?startIndex=0&endIndex=1&queue=competitive"
+    r = requests.get(url, headers=headers)
     matches = r.json()
     game = matches['Matches'][0]['MatchID']
 
     url = "https://pd.na.a.pvp.net/match-details/v1/matches/" + game
-    r = requests.get(url, headers=authdata['headers'])
+    r = requests.get(url, headers=headers)
     gameinfo = r.json()
 
     matchData = {}
     for player in gameinfo['players']:
-        if player['subject'].lower() == authdata['user_id'].lower():
+        if player['subject'].lower() == userid.lower():
             # get player info
             team = player['teamId']
 
@@ -523,14 +548,14 @@ async def lastMatch(userdata):
 
 
 async def pastmmr(userdata,szn):
-    authdata = await auth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
-    if authdata is False:
+    userid, headers = await floxayAuth(userdata['username'], userdata['password'])
+    if userid is False:
         return
-    cvers = await clientinfo(authdata['headers'])
-    authdata['headers'].update(cvers)
-    url = 'https://pd.na.a.pvp.net/mmr/v1/players/' + authdata['user_id']
+    cvers = await clientinfo(headers)
+    headers.update(cvers)
+    url = 'https://pd.na.a.pvp.net/mmr/v1/players/' + userid
 
-    r = requests.get(url, headers=authdata['headers'])
+    r = requests.get(url, headers=headers)
     seasons = r.json()
 
     past = seasons['QueueSkills']['competitive']['SeasonalInfoBySeasonID'][szn]
@@ -631,19 +656,19 @@ def getXhairSpec(settings):
 
 async def getXhair(userdata):
 
-    authdata = await auth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
-    if authdata is False:
+    userid, headers = await floxayAuth(userdata['username'], userdata['password'])
+    if userid is False:
         return
-    cvers = await clientinfo(authdata['headers'])
-    authdata['headers'].update(cvers)
+
+    cvers = await clientinfo(headers)
+    headers.update(cvers)
 
     url = 'https://playerpreferences.riotgames.com/playerPref/v3/getPreference/Ares.PlayerSettings'
-    r = requests.get(url, headers=authdata['headers'])
+    r = requests.get(url, headers=headers)
     settings = r.json()
     settings = inflate_decode(settings['data'])
     settings = json.loads(settings)
 
-    print()
     # specFlag = True
     # for index in settings['stringSettings']:
     #     if (index['settingEnum'] == 'EAresStringSettingName::CrosshairSettings'):
@@ -660,12 +685,13 @@ async def transferSettings(dataGetUser,dataSetUser):
 
 async def getSettings(userdata):
 
-    authdata = await auth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
-    if authdata is False:
+    userid, headers = await floxayAuth(userdata['username'], userdata['password'])
+    if userid is False:
         return
-    cvers = await clientinfo(authdata['headers'])
-    authdata['headers'].update(cvers)
-    headers = authdata['headers']
+
+    cvers = await clientinfo(headers)
+    headers.update(cvers)
+    headers = headers
 
     url = 'https://playerpreferences.riotgames.com/playerPref/v3/getPreference/Ares.PlayerSettings'
     r = requests.get(url, headers=headers)
@@ -674,23 +700,23 @@ async def getSettings(userdata):
 
 async def putSettings(userdata, settings):
 
-    authdata = await auth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
-    cvers = await clientinfo(authdata['headers'])
-    authdata['headers'].update(cvers)
-    headers = authdata['headers']
+    userid, headers = await floxayAuth(userdata['username'], userdata['password'])
+    cvers = await clientinfo(headers)
+    headers.update(cvers)
+    headers = headers
 
     url = 'https://playerpreferences.riotgames.com/playerPref/v3/savePreference'
     r = requests.put(url,json=settings, headers=headers)
 
 async def getMatch(userdata):
-    authdata = await auth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
-    if authdata is False:
+    userid, headers = await floxayAuth(userdata['username'], userdata['password'])
+    if userid is False:
         return
-    cvers = await clientinfo(authdata['headers'])
-    authdata['headers'].update(cvers)
-    url = 'https://glz-na-1.na.a.pvp.net/core-game/v1/players/' + authdata['user_id']
+    cvers = await clientinfo(headers)
+    headers.update(cvers)
+    url = 'https://glz-na-1.na.a.pvp.net/core-game/v1/players/' + userid
 
-    r = requests.get(url, headers=authdata['headers'])
+    r = requests.get(url, headers=headers)
     match = r.json()
 
     if not(r.status_code == 200):
@@ -700,14 +726,14 @@ async def getMatch(userdata):
     return match
 
 async def getUsersInMatch(userdata,matchID):
-    authdata = await auth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
-    if authdata is False:
+    userid, headers = await floxayAuth(userdata['username'], userdata['password'])
+    if userid is False:
         return
-    cvers = await clientinfo(authdata['headers'])
-    authdata['headers'].update(cvers)
+    cvers = await clientinfo(headers)
+    headers.update(cvers)
     url = 'https://glz-na-1.na.a.pvp.net/core-game/v1/matches/' + matchID
 
-    r = requests.get(url, headers=authdata['headers'])
+    r = requests.get(url, headers=headers)
     users = r.json()
 
     if not(r.status_code == 200):
@@ -756,46 +782,46 @@ def getAgentRanksInMatch(userdata,playerlist):
     return ranklist
 
 async def getAgents(userdata):
-    authdata = await auth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
-    if authdata is False:
+    userid, headers = await floxayAuth(userdata['username'], userdata['password'])
+    if userid is False:
         return
-    cvers = await clientinfo(authdata['headers'])
-    authdata['headers'].update(cvers)
+    cvers = await clientinfo(headers)
+    headers.update(cvers)
     # url = 'https://shared.na.a.pvp.net/content-service/v2/content'
     url = 'https://valorant-api.com/v1/agents'
 
-    r = requests.get(url, headers=authdata['headers'])
+    r = requests.get(url, headers=headers)
     charlist = r.json()
     return charlist
 
 async def getPlayerLoadout(userdata):
 
-    authdata = await auth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
-    if authdata is False:
+    userid, headers = await floxayAuth(userdata['username'], userdata['password'])
+    if userid is False:
         return
-    cvers = await clientinfo(authdata['headers'])
-    authdata['headers'].update(cvers)
-    url = 'https://pd.NA.a.pvp.net/personalization/v2/players/' + authdata['user_id'] + '/playerloadout'
+    cvers = await clientinfo(headers)
+    headers.update(cvers)
+    url = 'https://pd.NA.a.pvp.net/personalization/v2/players/' + userid + '/playerloadout'
 
-    r = requests.get(url, headers=authdata['headers'])
+    r = requests.get(url, headers=headers)
     player = r.json()
     return player
 
 async def getPlayerWeapons(userdata):
 
-    authdata = await auth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
-    if authdata is False:
+    userid, headers = await floxayAuth(userdata['username'], userdata['password'])
+    if userid is False:
         return
-    cvers = await clientinfo(authdata['headers'])
-    authdata['headers'].update(cvers)
+    cvers = await clientinfo(headers)
+    headers.update(cvers)
 
-    url = 'https://pd.NA.a.pvp.net/store/v1/entitlements/' + authdata['user_id'] + '/e7c63390-eda7-46e0-bb7a-a6abdacd2433'
-    r = requests.get(url, headers=authdata['headers'])
+    url = 'https://pd.NA.a.pvp.net/store/v1/entitlements/' + userid + '/e7c63390-eda7-46e0-bb7a-a6abdacd2433'
+    r = requests.get(url, headers=headers)
     playerSkinLevels = r.json()
     playerSkinLevels = playerSkinLevels['Entitlements']
 
-    url = 'https://pd.NA.a.pvp.net/store/v1/entitlements/' + authdata['user_id'] + '/3ad1b2b2-acdb-4524-852f-954a76ddae0a'
-    r = requests.get(url, headers=authdata['headers'])
+    url = 'https://pd.NA.a.pvp.net/store/v1/entitlements/' + userid + '/3ad1b2b2-acdb-4524-852f-954a76ddae0a'
+    r = requests.get(url, headers=headers)
     playerSkinChromas = r.json()
     playerSkinChromas = playerSkinChromas['Entitlements']
 
@@ -806,12 +832,12 @@ async def getPlayerWeapons(userdata):
 
 async def getContentWeapons(userdata):
 
-    authdata = await auth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
-    if authdata is False:
+    userid, headers = await floxayAuth(userdata['username'], userdata['password'])
+    if userid is False:
         return
-    cvers = await clientinfo(authdata['headers'])
-    authdata['headers'].update(cvers)
-    r = requests.get(f'https://shared.na.a.pvp.net/content-service/v2/content', headers=authdata['headers'])
+    cvers = await clientinfo(headers)
+    headers.update(cvers)
+    r = requests.get(f'https://shared.na.a.pvp.net/content-service/v2/content', headers=headers)
     weapons = r.json()
     weapons = weapons['SkinLevels']
     return weapons
