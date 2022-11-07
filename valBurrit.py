@@ -10,7 +10,7 @@ import datetime
 import sys
 import riot_auth
 
-userAgent = "RiotClient/58.0.0.4640299.4552318 rso-auth (Windows;10;;Professional, x64)"
+userAgent = "RiotClient/60.0.6.4770705.4749685 %s (Windows;10;;Professional, x64)"
 
 # auth stuff
 async def floxayAuth(username, password):
@@ -19,8 +19,15 @@ async def floxayAuth(username, password):
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
     # endregion
 
+    session = requests.session()
+    r = session.get(f'https://valorant-api.com/v1/version')
+    res = r.json()
+
+    userAgent = "RiotClient/" + res['data']['riotClientBuild'] + " %s (Windows;10;;Professional, x64)"
+
     CREDS = username, password
     auth = riot_auth.RiotAuth()
+    auth.RIOT_CLIENT_USER_AGENT = userAgent
     await auth.authorize(*CREDS)
 
     # Reauth using cookies. Returns a bool indicating whether the reauth attempt was successful.
@@ -165,7 +172,7 @@ def auth2facode(author, client, code, session):
     headers = {
         'Accept-Encoding': 'gzip, deflate, br',
         'Host': "entitlements.auth.riotgames.com",
-        'User-Agent': 'RiotClient/43.0.1.4195386.4190634 rso-auth (Windows;10;;Professional, x64)',
+        'User-Agent': userAgent,
         'Authorization': f'Bearer {access_token}',
     }
     r = session.post('https://entitlements.auth.riotgames.com/api/token/v1', headers=headers, json={})
@@ -175,7 +182,7 @@ def auth2facode(author, client, code, session):
     headers = {
         'Accept-Encoding': 'gzip, deflate, br',
         'Host': "auth.riotgames.com",
-        'User-Agent': 'RiotClient/43.0.1.4195386.4190634 rso-auth (Windows;10;;Professional, x64)',
+        'User-Agent': userAgent,
         'Authorization': f'Bearer {access_token}',
     }
 
