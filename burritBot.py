@@ -3,7 +3,7 @@ from datetime import datetime
 import sqlite3
 from discord.ext import commands
 from bs4 import BeautifulSoup
-import requests, pytz, discord, re, json, random, time, sqldb, asyncio, valBurrit, music, traceback
+import requests, pytz, discord, re, json, random, time, sqldb, asyncio, valBurrit, music, traceback, os
 
 intents = discord.Intents().all()
 client = commands.Bot(command_prefix='.', intents=intents)
@@ -743,4 +743,5 @@ async def stop(ctx):
     await music.stop(ctx, voice, client)
 
 if __name__ == '__main__':
-    client.run('ODM4MTAzNjY5MzcwNjUwNzE1.YI2O3Q.Tuq8ZqrLshUVxyw0Qc2p6_nu-A4')
+    token = os.environ['DISCORD_BOT_TOKEN']
+    client.run(token)
