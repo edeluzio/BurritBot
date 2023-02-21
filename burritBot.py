@@ -356,7 +356,7 @@ async def valsignup(ctx):
 
 
     await author.send(
-        "Next, respond with your Valorant password.\nYour password will NOT be saved to the database, but is needed to obtain authorization headers for HTTP requests. You are also free to delete these messages after responding with your password")
+        "Next, respond with your Valorant password.\n Please keep in mind that I am not currently storing passwords safely, so it is recommended to not use your usual password. You are also free to delete these messages after responding with your password")
     try:
         password = await client.wait_for('message', check=check(author), timeout=30.0)
         password = password.content
