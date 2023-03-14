@@ -10,7 +10,7 @@ import datetime
 import sys
 import riot_auth
 
-userAgent = "RiotClient/60.0.6.4770705.4749685 %s (Windows;10;;Professional, x64)"
+userAgent = "RiotClient/63.0.9.4909983.4789131 %s (Windows;10;;Professional, x64)"
 
 # auth stuff
 async def floxayAuth(username, password):
