@@ -13,7 +13,7 @@ import riot_auth
 userAgent = "RiotClient/63.0.9.4909983.4789131 %s (Windows;10;;Professional, x64)"
 
 # auth stuff
-async def floxayAuth(username, password):
+async def floxayAuth(username, password, author, client):
     # region asyncio.run() bug workaround for Windows, remove below 3.8 and above 3.10.6
     if sys.platform == "win32":
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -25,7 +25,7 @@ async def floxayAuth(username, password):
 
     userAgent = "RiotClient/" + res['data']['riotClientBuild'] + " %s (Windows;10;;Professional, x64)"
 
-    CREDS = username, password
+    CREDS = username, password, author, client
     auth = riot_auth.RiotAuth()
     auth.RIOT_CLIENT_USER_AGENT = userAgent
     await auth.authorize(*CREDS)
@@ -79,7 +79,7 @@ async def auth(username, password, author, client):
 
     elif res['type'] == 'multifactor':
         import burritBot
-        r = asyncio.ensure_future(burritBot.getCode(author, session, address, client))
+        r = asyncio.ensure_future(burritBot.getCode(author, session, client))
         await r
         r = r.result()
         if r is False:
@@ -220,9 +220,9 @@ async def clientinfo(authHeaders):
 
 # val user stuff
 async def fetchStore(userdata):
-    userid, headers = await floxayAuth(userdata['username'], userdata['password'])
+    userid, headers = await floxayAuth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
 
-    if userid is False:
+    if userid is None:
         return
 
     # Store Request

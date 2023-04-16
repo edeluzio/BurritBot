@@ -215,9 +215,9 @@ def addValUser(data):
     valname = data['valname']
     username = data['username']
     password = data['password']
-    entitlements = data['authdata']['headers']['X-Riot-Entitlements-JWT']
-    authorization = data['authdata']['headers']['Authorization']
-    user_id = data['authdata']['user_id']
+    entitlements = data['authdata'][1]['X-Riot-Entitlements-JWT']
+    authorization = data['authdata'][1]['Authorization']
+    user_id = data['authdata'][0]
 
     # add to db
     curs.execute("INSERT INTO valUsers VALUES (:username, :valname, :password, :entitlements, :authorization, :user_id)",

@@ -364,9 +364,7 @@ async def valsignup(ctx):
         return await author.send("Sorry, you took too long too respond. Please reenter .valsignup")
 
     # check if val acc/ get val auth stuff. if vauth is a string, then its an error code (as on may 2022), and responses are handled inside auth
-    vauth = await valBurrit.auth(username, password, author, client)
-    if isinstance(vauth, str):
-        return
+    vauth = await valBurrit.floxayAuth(username, password, author, client)
 
     # check db
     data = {'username': username, 'valname': valname, 'password': password, 'authdata': vauth}
@@ -405,21 +403,11 @@ async def valUsers(ctx):
     embed.add_field(name='Database ID', value=sqldb.getAllValUsers())
     await channel.send(embed=embed)
 
-async def getCode(author, session, address, client):
+async def getCode(author, session, client):
     await author.send("You just used a burrit command: Check your email for your 2FA code, and respond with this code")
     code = await client.wait_for('message', check=check(author), timeout=60.0)
     await author.send('Code recieved')
-    data = {
-            'type': 'multifactor',
-            'code': code.content,
-            'rememberDevice': False
-        }
-    r = session.put(f'https://{address}/api/v1/authorization', json=data, headers=session.headers, verify=False)
-    if 'error' in r.json():
-        await author.send("2FA code failed. Please reenter the command.")
-        return False
-    else:
-        return r
+    return code.content
 
 @client.command()
 async def shop(ctx):
@@ -435,6 +423,8 @@ async def shop(ctx):
     else:
         dbinfo = sqldb.getValUser({'valname': valname}, author, client)
         vshop = await valBurrit.fetchStore(dbinfo)
+        if (vshop is None):
+            return
 
         fskins = None
         index = 0
@@ -743,5 +733,5 @@ async def stop(ctx):
     await music.stop(ctx, voice, client)
 
 if __name__ == '__main__':
-    token = os.environ['DISCORD_BOT_TOKEN']
+    token = 'ODM4MTAzNjY5MzcwNjUwNzE1.Gad_94.NQUt93AfVmUH9F0-CIuBQQDZVsvNGAfpeG9kZs'
     client.run(token)
