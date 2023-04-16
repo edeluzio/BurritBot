@@ -733,5 +733,5 @@ async def stop(ctx):
     await music.stop(ctx, voice, client)
 
 if __name__ == '__main__':
-    token = 'ODM4MTAzNjY5MzcwNjUwNzE1.Gad_94.NQUt93AfVmUH9F0-CIuBQQDZVsvNGAfpeG9kZs'
+    token = os.environ['DISCORD_BOT_TOKEN']
     client.run(token)
