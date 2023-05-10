@@ -386,7 +386,7 @@ def getLatestSzn():
     }
 
 async def mmr(userdata):
-    userid, headers = await floxayAuth(userdata['username'], userdata['password'])
+    userid, headers = await floxayAuth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
 
     if userid is False:
         return
@@ -509,7 +509,7 @@ async def mmr(userdata):
     return mmrdata
 
 async def lastMatch(userdata):
-    userid, headers = await floxayAuth(userdata['username'], userdata['password'])
+    userid, headers = await floxayAuth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
 
     if userid is False:
         return
@@ -555,7 +555,7 @@ async def lastMatch(userdata):
 
 
 async def pastmmr(userdata,szn):
-    userid, headers = await floxayAuth(userdata['username'], userdata['password'])
+    userid, headers = await floxayAuth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
     if userid is False:
         return
     cvers = await clientinfo(headers)
@@ -663,7 +663,7 @@ def getXhairSpec(settings):
 
 async def getXhair(userdata):
 
-    userid, headers = await floxayAuth(userdata['username'], userdata['password'])
+    userid, headers = await floxayAuth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
     if userid is False:
         return
 
@@ -692,7 +692,7 @@ async def transferSettings(dataGetUser,dataSetUser):
 
 async def getSettings(userdata):
 
-    userid, headers = await floxayAuth(userdata['username'], userdata['password'])
+    userid, headers = await floxayAuth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
     if userid is False:
         return
 
@@ -707,7 +707,7 @@ async def getSettings(userdata):
 
 async def putSettings(userdata, settings):
 
-    userid, headers = await floxayAuth(userdata['username'], userdata['password'])
+    userid, headers = await floxayAuth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
     cvers = await clientinfo(headers)
     headers.update(cvers)
     headers = headers
@@ -716,7 +716,7 @@ async def putSettings(userdata, settings):
     r = requests.put(url,json=settings, headers=headers)
 
 async def getMatch(userdata):
-    userid, headers = await floxayAuth(userdata['username'], userdata['password'])
+    userid, headers = await floxayAuth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
     if userid is False:
         return
     cvers = await clientinfo(headers)
@@ -733,7 +733,7 @@ async def getMatch(userdata):
     return match
 
 async def getUsersInMatch(userdata,matchID):
-    userid, headers = await floxayAuth(userdata['username'], userdata['password'])
+    userid, headers = await floxayAuth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
     if userid is False:
         return
     cvers = await clientinfo(headers)
@@ -789,7 +789,7 @@ def getAgentRanksInMatch(userdata,playerlist):
     return ranklist
 
 async def getAgents(userdata):
-    userid, headers = await floxayAuth(userdata['username'], userdata['password'])
+    userid, headers = await floxayAuth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
     if userid is False:
         return
     cvers = await clientinfo(headers)
@@ -803,7 +803,7 @@ async def getAgents(userdata):
 
 async def getPlayerLoadout(userdata):
 
-    userid, headers = await floxayAuth(userdata['username'], userdata['password'])
+    userid, headers = await floxayAuth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
     if userid is False:
         return
     cvers = await clientinfo(headers)
@@ -816,7 +816,7 @@ async def getPlayerLoadout(userdata):
 
 async def getPlayerWeapons(userdata):
 
-    userid, headers = await floxayAuth(userdata['username'], userdata['password'])
+    userid, headers = await floxayAuth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
     if userid is False:
         return
     cvers = await clientinfo(headers)
@@ -839,7 +839,7 @@ async def getPlayerWeapons(userdata):
 
 async def getContentWeapons(userdata):
 
-    userid, headers = await floxayAuth(userdata['username'], userdata['password'])
+    userid, headers = await floxayAuth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
     if userid is False:
         return
     cvers = await clientinfo(headers)
