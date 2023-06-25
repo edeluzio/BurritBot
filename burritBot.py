@@ -37,6 +37,8 @@ async def on_ready():
 
 @client.event
 async def on_voice_state_update(member, before, after):
+    if (member.bot):
+        return
 
     # joining channel
     if before.channel is None and after.channel is not None:
