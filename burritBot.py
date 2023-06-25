@@ -733,5 +733,14 @@ async def stop(ctx):
     await music.stop(ctx, voice, client)
 
 if __name__ == '__main__':
-    token = os.environ['DISCORD_BOT_TOKEN']
+    # unix
+    try:
+        token = os.environ['DISCORD_BOT_TOKEN']
+    # windows, not a great way but easy enough
+    except:
+        file_path = 'token.txt'
+        with open(file_path, 'r') as file:
+            file_content = file.read()
+            token = file_content.split()
+            token = token[0]
     client.run(token)

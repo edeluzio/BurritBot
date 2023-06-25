@@ -42,7 +42,7 @@ def search(song):
         'noplaylist':'True',
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'wav',
+            'preferredcodec': 'mp3',
             'preferredquality': '192',
         }],
         }) as ydl:
