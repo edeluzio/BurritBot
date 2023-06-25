@@ -21,7 +21,7 @@ async def myAfter(client, voice):
 async def checkQueue(client, voice):
     print('queue size is ',  q1.qsize())
     if (q1.qsize() > 0):
-        source = await discord.FFmpegOpusAudio.from_probe(q1.get(), **FFMPEG_OPTS)
+        source = q1.get()
         voice.play(source, after=lambda e: asyncio.run(myAfter(client, voice)))
     else:
         time = 0
@@ -43,7 +43,7 @@ def search(song):
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
-            'preferredquality': '192',
+            'preferredquality': '128',
         }],
         }) as ydl:
         try: requests.get(song)
@@ -59,10 +59,11 @@ async def add(ctx, voice, source, client, url, urltitle):
     if voice and voice.is_connected():
         # bot is connected to a voice channel, so move to the channel the user is in (could be same channel) and queue song
         await voice.move_to(channel)
-        q1.put(source)
+        q1.put(FFmpegPCMAudio(source, **FFMPEG_OPTS))
             # bot is connected to channel but not playing anything, so play song
         if voice and not voice.is_playing():
-            source = await discord.FFmpegOpusAudio.from_probe(q1.get(), **FFMPEG_OPTS)  
+            # source = await discord.FFmpegOpusAudio.from_probe(q1.get(), **FFMPEG_OPTS)
+            source = q1.get()
             voice.play(source, after=lambda e: asyncio.run(myAfter(client, voice)))
             desc = "Now playing [" + urltitle + "](" + url + ") requested by " + ctx.author.mention
             embed = discord.Embed(description=desc)
@@ -76,9 +77,10 @@ async def add(ctx, voice, source, client, url, urltitle):
         # otherwise bot is not connected to a voice channel, so connect to the channel the user is in. clear queue in case bot was disconnected with songs in queue.
         with q1.mutex:
             q1.queue.clear()
-        q1.put(source)
+        q1.put(FFmpegPCMAudio(source, **FFMPEG_OPTS))
+        # source = await discord.FFmpegOpusAudio.from_probe(q1.get(), **FFMPEG_OPTS)
+        source = q1.get()
         voice = await channel.connect()
-        source = await discord.FFmpegOpusAudio.from_probe(q1.get(), **FFMPEG_OPTS)
         voice.play(source, after=lambda e: asyncio.run(myAfter(client, voice)))
         desc = "Now playing [" + urltitle + "](" + url + ") requested by " + ctx.author.mention
         embed = discord.Embed(description=desc)
@@ -88,7 +90,7 @@ async def add(ctx, voice, source, client, url, urltitle):
 async def skip(ctx, voice, client):
     voice.stop()
     if q1.qsize() > 0:
-        source = await discord.FFmpegOpusAudio.from_probe(q1.get(), **FFMPEG_OPTS)
+        source = q1.get()
         voice.play(source, after=lambda e: asyncio.run(myAfter(client, voice)))
     else:
         await voice.disconnect()
