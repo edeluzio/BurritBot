@@ -380,25 +380,22 @@ def getLatestSzn():
 async def mmr(userdata):
     userid, headers = await floxayAuth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])
 
-    if userid is False:
+    if not userid:
         return
 
-    cvers = await clientinfo(headers)
-    headers.update(cvers)
-    url = 'https://pd.na.a.pvp.net/mmr/v1/players/' + userid
+    headers.update(await clientinfo(headers))
+
+    url = f'https://pd.na.a.pvp.net/mmr/v1/players/{userid}'
     r = requests.get(url, headers=headers)
     rating = r.json()
 
     seasonInfo = getLatestSzn()
     try:
-        sznrating = rating['QueueSkills']['competitive']['SeasonalInfoBySeasonID'][seasonInfo["uuid"]]
-    except:
+        sznrating = rating['QueueSkills']['competitive']['SeasonalInfoBySeasonID'][seasonInfo['uuid']]
+    except KeyError:
         return False
 
-    if sznrating['LeaderboardRank'] == 0:
-        globalRank = "Too shit to be on leaderboard"
-    else:
-        globalRank = str(sznrating['LeaderboardRank'])
+    globalRank = "Too shit to be on leaderboard" if sznrating['LeaderboardRank'] == 0 else str(sznrating['LeaderboardRank'])
 
     mmrdata = {
         'ranknum': sznrating['CompetitiveTier'],
@@ -413,77 +410,67 @@ async def mmr(userdata):
     r = requests.get('https://valorant-api.com/v1/competitivetiers')
     tiers = r.json()
 
-    episode = tiers['data'][len(tiers['data']) - 1]
+    episode = tiers['data'][-1]
     mmrdata['rank'] = episode['tiers'][mmrdata['ranknum']]['tierName']
 
-    url = "https://pd.na.a.pvp.net/mmr/v1/players/" + userid + "/competitiveupdates?startIndex=0&queue=competitive"
+    url = f"https://pd.na.a.pvp.net/mmr/v1/players/{userid}/competitiveupdates?startIndex=0&queue=competitive"
     r = requests.get(url, headers=headers)
     matches = r.json()
 
-    # last 10 history
     games = 0
-    streak = 1
+    streak = 0
     streaktype = None
-    finalstreak = None
-    games = 0
-    wins = 0
-    losses = 0
-    ties = 0
+    finalstreak = False
+    wins, losses, ties = 0, 0, 0
+
     for match in matches['Matches']:
-        # disregard dodges
-        if match['MapID'] == '':
+        if not match['MapID']:
             continue
-        # get game info
-        url = "https://pd.na.a.pvp.net/match-details/v1/matches/" + match['MatchID']
+
+        url = f"https://pd.na.a.pvp.net/match-details/v1/matches/{match['MatchID']}"
         r = requests.get(url, headers=headers)
         gameinfo = r.json()
-        # check make sure its ranked game
-        # get player team
-        for player in gameinfo['players']:
-            if player['subject'].lower() == userid.lower():
-                pteam = player['teamId']
-                break
-        # check if win or loss
+
+        pteam = next(player['teamId'] for player in gameinfo['players'] if player['subject'].lower() == userid.lower())
+
         for team in gameinfo['teams']:
             if team['teamId'] == pteam:
-                games = games + 1
+                games += 1
 
                 if pteam == gameinfo['teams'][0]['teamId']:
                     otherTeam = gameinfo['teams'][1]
                 else:
                     otherTeam = gameinfo['teams'][0]
 
-                # set streak type
                 if games == 1:
-                    if team['won'] is True and otherTeam['won'] is False:
-                        streaktype = 'W'
-                    elif team['won'] is False and otherTeam['won'] is False:
-                        streaktype = 'T'
+                    if team['won'] and not otherTeam['won']:
+                        streaktype = 'W'   
+                    elif not team['won'] and not otherTeam['won']:
+                        streaktype = 'T' 
+                    elif not team['won'] and otherTeam['won']:
+                        streaktype = 'L' 
+                
+                if team['won'] and not otherTeam['won']:
+                    wins += 1
+                    if streaktype == 'W' and finalstreak is False:
+                        streak += 1
                     else:
-                        streaktype = 'L'
+                        finalstreak = True
 
-                elif team['won'] is True and otherTeam['won'] is False:
-                    wins = wins + 1
-                    if streaktype == 'W' and finalstreak is None:
-                        streak = streak + 1
+                elif not team['won'] and not otherTeam['won']:
+                    ties += 1
+                    if streaktype == 'T' and finalstreak is False:
+                        streak += 1
                     else:
-                        finalstreak = streak
-
-                elif team['won'] is False and otherTeam['won'] is False:
-                    ties = ties + 1
-                    if streaktype == 'T' and finalstreak is None:
-                        streak = streak + 1
-                    else:
-                        finalstreak = streak
+                        finalstreak = True
 
                 else:
-                    losses = losses + 1
-                    if streaktype == 'L' and finalstreak is None:
-                        streak = streak + 1
+                    losses += 1
+                    if streaktype == 'L' and finalstreak is False:
+                        streak += 1
                     else:
-                        finalstreak = streak
-
-        # stop at 10 games
+                        finalstreak = True
+                    
         if games == 10:
             break
 
@@ -491,7 +478,7 @@ async def mmr(userdata):
         'wins': wins,
         'losses': losses,
         'ties': ties,
-        'streak': finalstreak,
+        'streak': streak,
         'streaktype': streaktype,
     }
     mmrdata['history10'] = history10
