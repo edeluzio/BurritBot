@@ -418,46 +418,42 @@ async def shop(ctx):
     message = ctx.message.content
     valname = re.sub(r'(^.shop)', '', message).lstrip()
 
-    if not (sqldb.checkInValUsers({'valname': valname})):
-        embed = discord.Embed(description=(valname.capitalize() + " is not registered in the database"))
+    if not sqldb.checkInValUsers({'valname': valname}):
+        embed = discord.Embed(description=(f"{valname.capitalize()} is not registered in the database"))
         await channel.send(embed=embed)
-
     else:
         dbinfo = sqldb.getValUser({'valname': valname}, author, client)
         vshop = await valBurrit.fetchStore(dbinfo)
-        if (vshop is None):
+        if vshop is None:
             return
 
-        fskins = None
-        index = 0
-        if 'feat' in vshop:
-            fskins = ''
-            for names in vshop['feat']['names']:
-                fskins = fskins + names + '\t\t ---- ' + str(vshop['feat']['prices'][index]) + ' VP' + '\n'
-                index = index + 1
+        categories = ['feat', 'norm', 'bon']
+        for category in categories:
+            if category in vshop:
+                items = ''
+                for names, prices in zip(vshop[category]['names'], vshop[category]['prices']):
+                    items += f"{names}\t\t ---- {prices} VP\n"
 
-        nskins = None
-        index = 0
-        if 'norm' in vshop:
-            nskins = ''
-            for names in vshop['norm']['names']:
-                nskins = nskins + names + '\t\t ---- ' + str(vshop['norm']['prices'][index]) + ' VP' + '\n'
-                index = index + 1
+                if category == 'feat':
+                    fskins = items
+                elif category == 'norm':
+                    nskins = items
+                elif category == 'bon':
+                    bskins = items
 
-        bskins = None
-        index = 0
-        if 'bon' in vshop:
-            bskins = ''
-            for names in vshop['bon']['names']:
-                bskins = bskins + names + '\t\t ---- ' + str(vshop['bon']['prices'][index]) + ' VP' + '\n'
-                index = index + 1
+    # Debugging env var
+    if os.getenv('BURRIT_DEBUG'):
+        debug_text = " (DEBUG)"
+    else:
+        debug_text = ""
 
-        # send message back
-        embed = discord.Embed(title=(valname.capitalize() + "'s Valorant Store"))
-        embed.add_field(name='Featured Shop', value=fskins or "Weekly shop currently has no guns (they got some weird ass shop rn)", inline=False)
-        embed.add_field(name='Regular Shop', value=nskins or "Daily shop currently has no guns (they got some weird ass shop rn)", inline=False)
-        embed.add_field(name='Night Shop', value=bskins or "You currently have no Night Shop", inline=False)
-        await channel.send(embed=embed)
+    # send message back
+    embed_title = valname.capitalize() + "'s Valorant Store" + debug_text
+    embed = discord.Embed(title=embed_title)
+    embed.add_field(name='Featured Shop', value=fskins or "Weekly shop currently has no guns (they got some weird ass shop rn)", inline=False)
+    embed.add_field(name='Regular Shop', value=nskins or "Daily shop currently has no guns (they got some weird ass shop rn)", inline=False)
+    embed.add_field(name='Night Shop', value=bskins or "You currently have no Night Shop", inline=False)
+    await channel.send(embed=embed)
 
 @client.command()
 async def rank(ctx):

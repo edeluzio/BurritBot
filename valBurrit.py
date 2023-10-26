@@ -245,15 +245,7 @@ async def fetchStore(userdata):
     except:
         pass
 
-    fskins = []
-    nskins = []
-    bskins = []
-    fnames = []
-    nnames = []
-    bnames = []
-    fprices = []
-    nprices = []
-    bprices = []
+    featuredSkins, normalSkins, bonusSkins, featuredNames, normalNames, bonusNames, featuredPrices, normalPrices, bonuesPrices = [], [], [], [], [], [], [], [], []
 
     #get daily shop prices
     r = requests.get('https://pd.na.a.pvp.net/store/v1/offers/', headers=headers)
@@ -263,43 +255,51 @@ async def fetchStore(userdata):
     r = requests.get(f'https://valorant-api.com/v1/weapons', headers=headers)
     assets = r.json()
 
-    # get featured store ids and names
-    for i in range(featuredlength):
-        fskins.append(store['FeaturedBundle']['Bundle']['Items'][i]['Item']['ItemID'])
-        if (int(store['FeaturedBundle']['Bundle']['Items'][i]['BasePrice']) > 700):
-            fprices.append(store['FeaturedBundle']['Bundle']['Items'][i]['BasePrice'])
-    for featSkin in range(fskins.__len__()):
-        for asset in range(assets['data'].__len__()):
-            for skin in range(assets['data'][asset]['skins'].__len__()):
-                if fskins[featSkin].lower() == assets['data'][asset]['skins'][skin]['levels'][0]['uuid'].lower():
-                    fnames.append(assets['data'][asset]['skins'][skin]['levels'][0]['displayName'])
+    # Extract featured store ids and prices
+    for item in store['FeaturedBundle']['Bundle']['Items']:
+        item_id = item['Item']['ItemID']
+        base_price = int(item['BasePrice'])
+        featuredSkins.append(item_id)
+        if base_price > 700:
+            featuredPrices.append(base_price)
 
     # get normal store ids and names
     for k in range(normallength):
-        nskins.append(store['SkinsPanelLayout']['SingleItemOffers'][k])
-    for normSkin in range(nskins.__len__()):
-        for asset in range(assets['data'].__len__()):
-            for skin in range(assets['data'][asset]['skins'].__len__()):
-                if nskins[normSkin].lower() == assets['data'][asset]['skins'][skin]['levels'][0]['uuid'].lower():
-                    nnames.append(assets['data'][asset]['skins'][skin]['levels'][0]['displayName'])
+        normalSkins.append(store['SkinsPanelLayout']['SingleItemOffers'][k])
 
-    # try to get bonus ids and names
+    # Create a set of unique fskins
+    unique_fskins = set(fskin.lower() for fskin in featuredSkins)
+    unique_nskins = set(nskin.lower() for nskin in normalSkins)
+
+    # Create a dictionary for quick lookup of assets
+    asset_dict = {asset['skins'][skin]['levels'][0]['uuid'].lower(): asset['skins'][skin]['levels'][0]['displayName']
+                for asset in assets['data']
+                for skin in range(len(asset['skins']))}
+
+    featuredNames = [asset_dict[fskin] for fskin in unique_fskins if fskin in asset_dict]
+    normalNames = [asset_dict[nskin] for nskin in unique_nskins if nskin in asset_dict]
+
+    # Try to extract bonus store ids and prices
     try:
-        for m in range(bonuslength):
-            bskins.append(store['BonusStore']['BonusStoreOffers'][m]['Offer']['OfferID'])
-            bprices.append(list(store['BonusStore']['BonusStoreOffers'][m]['DiscountCosts'].values())[0])
-        for bonSkin in range(bskins.__len__()):
-            for asset in range(assets['data'].__len__()):
-                for skin in range(assets['data'][asset]['skins'].__len__()):
-                    if bskins[bonSkin].lower() == assets['data'][asset]['skins'][skin]['levels'][0]['uuid'].lower():
-                        bnames.append(assets['data'][asset]['skins'][skin]['levels'][0]['displayName'])
-    except:
+        bonus_offers = store.get('BonusStore', {}).get('BonusStoreOffers', [])
+        for offer in bonus_offers:
+            bonusSkins.append(offer['Offer']['OfferID'])
+            bonuesPrices.append(list(offer['DiscountCosts'].values())[0])
+
+        # Create a set of unique bskins
+        unique_bskins = set(bskin.lower() for bskin in bonusSkins)
+
+        # Find matching bskins
+        bonusNames = [asset_dict[bskin] for bskin in unique_bskins if bskin in asset_dict]
+
+    except Exception as e:
         pass
 
-    for j in nskins:
-        for i in dailyprice['Offers']:
-            if i['OfferID'] == j:
-                nprices.append(list(i['Cost'].values())[0])
+    # Create a dictionary for quick lookup of prices based on OfferID
+    offer_prices = {offer['OfferID']: list(offer['Cost'].values())[0] for offer in dailyprice['Offers']}
+
+    # Get normal store prices
+    normalPrices = [offer_prices[offerID] for offerID in normalSkins if offerID in offer_prices]
 
     # # get skin images
     # fskinimages = []
@@ -333,38 +333,30 @@ async def fetchStore(userdata):
     #             # if the gun ids match, append the link to the list
     #             if bskins[a].lower() == assets['data'][b]['skins'][c]['levels'][0]['uuid']:
     #                 bskinimages.append(assets['data'][b]['skins'][c]['chromas'][0]['fullRender'])
-
     skinsdata = {}
-
     feat = {}
     norm = {}
     bon = {}
 
-    # append prices
-    feat['prices'] = fprices
-    norm['prices'] = nprices
-    bon['prices'] = bprices
+    norm['prices'] = normalPrices
+    norm['names'] = normalNames
+    norm['timer'] = store['SkinsPanelLayout']['SingleItemOffersRemainingDurationInSeconds']
 
+    feat['prices'] = featuredPrices
+    feat['names'] = featuredNames
+    feat['timer'] = store['FeaturedBundle']['BundleRemainingDurationInSeconds']
+
+    skinsdata['feat'] = feat
+    skinsdata['norm'] = norm
+
+    bon['prices'] = bonuesPrices
+    bon['names'] = bonusNames
+    if not (bonusNames.__len__() == 0):
+        skinsdata['bon'] = bon
     # append weapon images
     # feat['images'] = fskinimages
     # norm['images'] = nskinimages
     # bon['images'] = bskinimages
-
-    # append weapon names
-    feat['names'] = fnames
-    norm['names'] = nnames
-    bon['names'] = bnames
-
-    # append timers
-    feat['timer'] = store['FeaturedBundle']['BundleRemainingDurationInSeconds']
-    norm['timer'] = store['SkinsPanelLayout']['SingleItemOffersRemainingDurationInSeconds']
-
-    # append everything to skin data
-    skinsdata['feat'] = feat
-    skinsdata['norm'] = norm
-    if not (bnames.__len__() == 0):
-        skinsdata['bon'] = bon
-
     return skinsdata
 
 def getLatestSzn():
