@@ -415,17 +415,14 @@ async def mmr(userdata):
         'losses': sznrating['NumberOfGames'] - sznrating['NumberOfWins'],
         'lastGame': rating['LatestCompetitiveUpdate']['RankedRatingEarned'],
         'globalRank': globalRank,
+        'rank': '',
     }
 
     r = requests.get('https://valorant-api.com/v1/competitivetiers')
     tiers = r.json()
 
-    for episode in tiers['data']:
-        if episode["assetObjectName"].split("_")[0].lower() == seasonInfo["actName"].lower():
-            for ranks in episode["tiers"]:
-                if mmrdata['ranknum'] == ranks['tier']:
-                    mmrdata['rank'] = ranks['tierName']
-                    break
+    episode = tiers['data'][len(tiers['data']) - 1]
+    mmrdata['rank'] = episode['tiers'][mmrdata['ranknum']]['tierName']
 
     url = "https://pd.na.a.pvp.net/mmr/v1/players/" + userid + "/competitiveupdates?startIndex=0&queue=competitive"
     r = requests.get(url, headers=headers)
