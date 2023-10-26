@@ -19,6 +19,12 @@ def check(author):
 def is_me(m):
     return m.author == client.user
 
+def debugString(debugText):
+    if os.getenv('BURRIT_DEBUG'):
+        debug_text = f"{debugText}"
+    else:
+        debug_text = ""
+    return debug_text
 
 def get_rot(title):
     url = 'https://www.rottentomatoes.com/search?search=' + title
@@ -441,14 +447,8 @@ async def shop(ctx):
                 elif category == 'bon':
                     bskins = items
 
-    # Debugging env var
-    if os.getenv('BURRIT_DEBUG'):
-        debug_text = " (DEBUG)"
-    else:
-        debug_text = ""
-
     # send message back
-    embed_title = valname.capitalize() + "'s Valorant Store" + debug_text
+    embed_title = valname.capitalize() + "'s Valorant Store" + debugString('(DEBUG)')
     embed = discord.Embed(title=embed_title)
     embed.add_field(name='Featured Shop', value=fskins or "Weekly shop currently has no guns (they got some weird ass shop rn)", inline=False)
     embed.add_field(name='Regular Shop', value=nskins or "Daily shop currently has no guns (they got some weird ass shop rn)", inline=False)
@@ -463,41 +463,36 @@ async def rank(ctx):
     message = ctx.message.content
     valname = re.sub(r'(^.rank)', '', message).lstrip()
 
-    if not (sqldb.checkInValUsers({'valname': valname})):
-        embed = discord.Embed(description=(valname.capitalize()+ " is not registered in the database"))
-        await channel.send(embed=embed)
-        return
+    if not sqldb.checkInValUsers({'valname': valname}):
+        embed = discord.Embed(description=f"{valname.capitalize()} is not registered in the database")
     else:
         dbinfo = sqldb.getValUser({'valname': valname}, author, client)
         mmrdata = await valBurrit.mmr(dbinfo)
 
         if mmrdata is False:
-            embed = discord.Embed(description=(valname.capitalize()+ " has not played a competitive game this season"))
-            await channel.send(embed=embed)
-            return
+            embed = discord.Embed(description=f"{valname.capitalize()} has not played a competitive game this season")
+        else:
+            dec = Decimal(10) ** -2
+            mmrtotal = mmrdata['wins'] + mmrdata['losses']
+            mmrperc = Decimal(mmrdata['wins'] / mmrtotal * 100).quantize(dec)
+            mmrperc = f"{mmrperc}%"
 
-        dec = Decimal(10) ** -2
-        mmrtotal = mmrdata['wins'] + mmrdata['losses']
-        mmrperc = (mmrdata['wins'] / mmrtotal * 100)
-        mmrperc = Decimal(mmrperc).quantize(dec)
-        mmrperc = str(mmrperc) + '%'
+            l10 = f"{mmrdata['history10']['wins']}-{mmrdata['history10']['losses']}-{mmrdata['history10']['ties']}"
+            streak = f"{mmrdata['history10']['streaktype']}{mmrdata['history10']['streak']}"
 
-        # streak and last 10 games
-        l10 = str(mmrdata['history10']['wins']) + '-' + str(mmrdata['history10']['losses']) + '-' + str(mmrdata['history10']['ties'])
-        streak = mmrdata['history10']['streaktype'] + str(mmrdata['history10']['streak'])
+            embed_title = valname.capitalize() + "'s Current Valorant Rank" + debugString('(DEBUG)')
+            embed = discord.Embed(title=embed_title)
+            embed.add_field(name='Rank', value=mmrdata['rank'])
+            embed.add_field(name='Elo In Rank', value=mmrdata['elo'], inline=False)
+            embed.add_field(name='Global Rank', value=mmrdata['globalRank'], inline=False)
+            embed.add_field(name='Net Elo From Last Game Played', value=mmrdata['lastGame'])
+            embed.add_field(name='Wins', value=mmrdata['wins'], inline=False)
+            embed.add_field(name='Losses', value=mmrdata['losses'])
+            embed.add_field(name='Win Percentage', value=mmrperc, inline=False)
+            embed.add_field(name='Record In Last 10 Games', value=l10, inline=False)
+            embed.add_field(name='Current Streak', value=streak, inline=False)
 
-        embed = discord.Embed(title=(valname.capitalize() + "'s Current Valorant Rank"))
-        embed.add_field(name='Rank', value=mmrdata['rank'])
-        embed.add_field(name='Elo In Rank', value=mmrdata['elo'], inline=False)
-        embed.add_field(name='Global Rank', value=mmrdata['globalRank'], inline=False)
-        embed.add_field(name='Net Elo From Last Game Played', value=mmrdata['lastGame'])
-        embed.add_field(name='Wins', value=mmrdata['wins'], inline=False)
-        embed.add_field(name='Losses', value=mmrdata['losses'])
-        embed.add_field(name='Win Percentage', value=mmrperc,inline=False)
-        embed.add_field(name='Record In Last 10 Games', value=l10, inline=False)
-        embed.add_field(name='Current Streak', value=streak, inline=False)
-
-        await channel.send(embed=embed)
+    await channel.send(embed=embed)
 
 @client.command()
 async def lastmatch(ctx):
