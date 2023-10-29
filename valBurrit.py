@@ -233,73 +233,49 @@ async def fetchStore(userdata):
     headers.update(cvers)
 
     # Content Request
-    r = requests.get(f'https://valorant-api.com/v1/weapons/skinchromas', headers=headers)
-    data = r.json()
-
-    featuredlength = store['FeaturedBundle']['Bundle']['Items'].__len__()
-    normallength = store['SkinsPanelLayout']['SingleItemOffers'].__len__()
+    # r = requests.get(f'https://valorant-api.com/v1/weapons/skinchromas', headers=headers)
+    # data = r.json()
 
     # try to get a the night shop since it's not always there
+    bonusExists = False
     try:
         bonuslength = store['BonusStore']['BonusStoreOffers'].__len__()
+        bonusExists = True
     except:
         pass
 
     featuredSkins, normalSkins, bonusSkins, featuredNames, normalNames, bonusNames, featuredPrices, normalPrices, bonuesPrices = [], [], [], [], [], [], [], [], []
 
-    #get daily shop prices
-    r = requests.get('https://pd.na.a.pvp.net/store/v1/offers/', headers=headers)
-    dailyprice = r.json()
-
     # get the asset pack
     r = requests.get(f'https://valorant-api.com/v1/weapons', headers=headers)
     assets = r.json()
-
-    # Extract featured store ids and prices
-    for item in store['FeaturedBundle']['Bundle']['Items']:
-        item_id = item['Item']['ItemID']
-        base_price = int(item['BasePrice'])
-        featuredSkins.append(item_id)
-        if base_price > 700:
-            featuredPrices.append(base_price)
-
-    # get normal store ids and names
-    for k in range(normallength):
-        normalSkins.append(store['SkinsPanelLayout']['SingleItemOffers'][k])
-
-    # Create a set of unique fskins
-    unique_fskins = set(fskin.lower() for fskin in featuredSkins)
-    unique_nskins = set(nskin.lower() for nskin in normalSkins)
 
     # Create a dictionary for quick lookup of assets
     asset_dict = {asset['skins'][skin]['levels'][0]['uuid'].lower(): asset['skins'][skin]['levels'][0]['displayName']
                 for asset in assets['data']
                 for skin in range(len(asset['skins']))}
 
-    featuredNames = [asset_dict[fskin] for fskin in unique_fskins if fskin in asset_dict]
-    normalNames = [asset_dict[nskin] for nskin in unique_nskins if nskin in asset_dict]
+    # Extract featured store ids and prices
+    for item in store['FeaturedBundle']['Bundle']['Items']:
+        item_id = item['Item']['ItemID']
+        base_price = int(item['BasePrice'])
+        name = asset_dict.get(item_id.lower(), '')
+        if base_price > 700:
+            featuredSkins.append({'id': item_id, 'price': base_price, 'name': name})
+
+    # get normal store ids and names
+    for item in store['SkinsPanelLayout']['SingleItemStoreOffers']:
+        name = asset_dict.get(item['OfferID'].lower(), '')
+        price = item['Cost'].popitem()[1]
+        normalSkins.append({'id': item['OfferID'], 'price': price, 'name': name})
 
     # Try to extract bonus store ids and prices
-    try:
+    if (bonusExists):
         bonus_offers = store.get('BonusStore', {}).get('BonusStoreOffers', [])
-        for offer in bonus_offers:
-            bonusSkins.append(offer['Offer']['OfferID'])
-            bonuesPrices.append(list(offer['DiscountCosts'].values())[0])
-
-        # Create a set of unique bskins
-        unique_bskins = set(bskin.lower() for bskin in bonusSkins)
-
-        # Find matching bskins
-        bonusNames = [asset_dict[bskin] for bskin in unique_bskins if bskin in asset_dict]
-
-    except Exception as e:
-        pass
-
-    # Create a dictionary for quick lookup of prices based on OfferID
-    offer_prices = {offer['OfferID']: list(offer['Cost'].values())[0] for offer in dailyprice['Offers']}
-
-    # Get normal store prices
-    normalPrices = [offer_prices[offerID] for offerID in normalSkins if offerID in offer_prices]
+        for item in bonus_offers:
+            name = asset_dict.get(item['Offer']['OfferID'].lower(), '')
+            price = item['DiscountCosts'].popitem()[1]
+            bonusSkins.append({'id': item['Offer']['OfferID'], 'price': price, 'name': name})
 
     # # get skin images
     # fskinimages = []
@@ -334,25 +310,14 @@ async def fetchStore(userdata):
     #             if bskins[a].lower() == assets['data'][b]['skins'][c]['levels'][0]['uuid']:
     #                 bskinimages.append(assets['data'][b]['skins'][c]['chromas'][0]['fullRender'])
     skinsdata = {}
-    feat = {}
-    norm = {}
-    bon = {}
+    skinsdata['featured'] = featuredSkins
+    skinsdata['normal'] = normalSkins
+    if (bonusExists):
+        skinsdata['bonus'] = bonusSkins
 
-    norm['prices'] = normalPrices
-    norm['names'] = normalNames
-    norm['timer'] = store['SkinsPanelLayout']['SingleItemOffersRemainingDurationInSeconds']
+    skinsdata['normalTimer'] = store['SkinsPanelLayout']['SingleItemOffersRemainingDurationInSeconds']
+    skinsdata['featuredTimer'] = store['FeaturedBundle']['BundleRemainingDurationInSeconds']
 
-    feat['prices'] = featuredPrices
-    feat['names'] = featuredNames
-    feat['timer'] = store['FeaturedBundle']['BundleRemainingDurationInSeconds']
-
-    skinsdata['feat'] = feat
-    skinsdata['norm'] = norm
-
-    bon['prices'] = bonuesPrices
-    bon['names'] = bonusNames
-    if not (bonusNames.__len__() == 0):
-        skinsdata['bon'] = bon
     # append weapon images
     # feat['images'] = fskinimages
     # norm['images'] = nskinimages

@@ -433,26 +433,25 @@ async def shop(ctx):
         if vshop is None:
             return
 
-        categories = ['feat', 'norm', 'bon']
-        for category in categories:
-            if category in vshop:
-                items = ''
-                for names, prices in zip(vshop[category]['names'], vshop[category]['prices']):
-                    items += f"{names}\t\t ---- {prices} VP\n"
+    fitems = ''
+    for item in vshop['featured']:
+        fitems += f"{item['name']}\t\t ---- {item['price']} VP\n"
 
-                if category == 'feat':
-                    fskins = items
-                elif category == 'norm':
-                    nskins = items
-                elif category == 'bon':
-                    bskins = items
+    nitems = ''
+    for item in vshop['normal']:
+        nitems += f"{item['name']}\t\t ---- {item['price']} VP\n"
+
+    if (vshop['bonus']):
+        bitems = ''
+        for item in vshop['bonus']:
+            bitems += f"{item['name']}\t\t ---- {item['price']} VP\n"
 
     # send message back
     embed_title = valname.capitalize() + "'s Valorant Store" + debugString('(DEBUG)')
     embed = discord.Embed(title=embed_title)
-    embed.add_field(name='Featured Shop', value=fskins or "Weekly shop currently has no guns (they got some weird ass shop rn)", inline=False)
-    embed.add_field(name='Regular Shop', value=nskins or "Daily shop currently has no guns (they got some weird ass shop rn)", inline=False)
-    embed.add_field(name='Night Shop', value=bskins or "You currently have no Night Shop", inline=False)
+    embed.add_field(name='Featured Shop', value=fitems or "Weekly shop currently has no guns (they got some weird ass shop rn)", inline=False)
+    embed.add_field(name='Regular Shop', value=nitems or "Daily shop currently has no guns (they got some weird ass shop rn)", inline=False)
+    embed.add_field(name='Night Shop', value=bitems or "You currently have no Night Shop", inline=False)
     await channel.send(embed=embed)
 
 @client.command()
