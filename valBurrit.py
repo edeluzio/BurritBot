@@ -237,14 +237,9 @@ async def fetchStore(userdata):
     # data = r.json()
 
     # try to get a the night shop since it's not always there
-    bonusExists = False
-    try:
-        bonuslength = store['BonusStore']['BonusStoreOffers'].__len__()
-        bonusExists = True
-    except:
-        pass
+    bonusExists = 'BonusStoreOffers' in store.get('BonusStore', {})
 
-    featuredSkins, normalSkins, bonusSkins, featuredNames, normalNames, bonusNames, featuredPrices, normalPrices, bonuesPrices = [], [], [], [], [], [], [], [], []
+    featuredSkins, normalSkins, bonusSkins = [], [], []
 
     # get the asset pack
     r = requests.get(f'https://valorant-api.com/v1/weapons', headers=headers)
@@ -493,7 +488,6 @@ async def lastMatch(userdata):
             matchData['elo'] = matches['Matches'][0]['RankedRatingEarned']
 
             return matchData
-
 
 async def pastmmr(userdata,szn):
     userid, headers = await floxayAuth(userdata['username'], userdata['password'], userdata['author'], userdata['client'])

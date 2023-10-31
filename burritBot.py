@@ -441,7 +441,8 @@ async def shop(ctx):
     for item in vshop['normal']:
         nitems += f"{item['name']}\t\t ---- {item['price']} VP\n"
 
-    if (vshop['bonus']):
+    bitems = None
+    if ('bonus' in vshop):
         bitems = ''
         for item in vshop['bonus']:
             bitems += f"{item['name']}\t\t ---- {item['price']} VP\n"
