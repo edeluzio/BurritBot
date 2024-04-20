@@ -226,11 +226,12 @@ async def fetchStore(userdata):
         return
 
     # Store Request
+    cvers = await clientinfo(headers)
+    headers.update(cvers)
     r = requests.get(f'https://pd.na.a.pvp.net/store/v2/storefront/' + userid, headers=headers)
     store = r.json()
 
-    cvers = await clientinfo(headers)
-    headers.update(cvers)
+
 
     # Content Request
     # r = requests.get(f'https://valorant-api.com/v1/weapons/skinchromas', headers=headers)
