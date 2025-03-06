@@ -1,8 +1,10 @@
-from youtube_dl import YoutubeDL
 from discord import FFmpegPCMAudio
 import discord.utils
 from discord.ext import commands
 import requests, queue, time, asyncio
+import subprocess
+import json
+import yt_dlp
 
 
 FFMPEG_OPTS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
@@ -37,19 +39,29 @@ async def checkQueue(client, voice):
 
 #Get videos from links or from youtube search
 def search(song):
-    with YoutubeDL({
+    # with yt_dlp.YoutubeDL({
+    #     'format': 'bestaudio/best',
+    #     'noplaylist':'True',
+    #     'postprocessors': [{
+    #         'key': 'FFmpegExtractAudio',
+    #         'preferredcodec': 'mp3',
+    #         'preferredquality': '128',
+    #     }],
+    #     }) as ydl:
+    #     try: requests.get(song)
+    #     except: info = ydl.extract_info(f"ytsearch:{song}", download=False)['entries'][0]
+    #     else: info = ydl.extract_info(song, download=False)
+    # return (info, info['formats'][5]['url'])
+    ydl_opts = {
         'format': 'bestaudio/best',
-        'noplaylist':'True',
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '128',
-        }],
-        }) as ydl:
-        try: requests.get(song)
-        except: info = ydl.extract_info(f"ytsearch:{song}", download=False)['entries'][0]
-        else: info = ydl.extract_info(song, download=False)
-    return (info, info['formats'][0]['url'])
+        'quiet': True,
+        'noplaylist': True
+    }
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info_dict = ydl.extract_info(song, download=False)
+        audio_url = info_dict['url']
+        return info_dict, audio_url
 
 
 async def add(ctx, voice, source, client, url, urltitle):
